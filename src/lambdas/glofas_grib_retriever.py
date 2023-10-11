@@ -36,7 +36,7 @@ def lambda_handler(event, context):
     client = GloFASClient(api_url=creds['url'], api_key=creds['key'])
     
     # Construct unique file paths based on the date hierarchy and leadtime_hour
-    grib_output_path = f"s3://your-bucket-name/staging/grib/{year}/{month}/{day}/forecast_leadtime_{leadtime_hour}.grib"
+    grib_output_path = f"s3://your-bucket-name/staging/{year}/{month}/{day}/forecast_leadtime_{leadtime_hour}.grib"
     
     # Fetch the data and save it as GRIB in the S3 staging area
     client.fetch_grib_data(request_params, grib_output_path)
