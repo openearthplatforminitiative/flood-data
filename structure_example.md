@@ -27,10 +27,6 @@ flood-data/
 │   │   ├── grib_to_parquet.py          # Logic to convert GRIB to Parquet
 │   │   └── ...
 │   │
-│   ├── lambdas/                        # Lambdas
-│   │    ├── fetch_grib_data.py         # Fetch GRIB from GloFAS
-│   │    └── convert_grib_to_parquet.py # Convert GRIB to Parquet
-│   │
 │   ├── utils/                          # Utility functions and classes
 │   │   ├── __init__.py
 │   │   ├── logger.py                   # Logging utility
