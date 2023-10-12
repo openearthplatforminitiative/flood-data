@@ -39,8 +39,6 @@ flood-data/
 │   ├── test_api_client.py
 │   ├── test_glofas_fetcher.py
 │   ├── test_grib_to_parquet.py
-│   ├── test_lambda_fetch_grib_data.py
-│   ├── test_lambda_convert_grib_to_parquet.py
 │   ├── test_logger.py
 │   ├── test_config.py
 │   ├── test_error_handling.py
