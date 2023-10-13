@@ -9,8 +9,8 @@ setup(
     description="A Python package to process flood data.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author="Gil Tinde, Aleksander Stangeland",
-    author_email="gil.tinde@knowit.no",
+    author="Aleksander Stangeland, Gil Tinde",
+    author_email="aleksander.stangeland@knowit.no, gil.tinde@knowit.no",
     packages=find_packages(),  # Automatically discover and include all packages in the package directory
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -18,8 +18,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[  # specify your dependencies here
-        # 'numpy',
-        # 'pandas',
         'cdsapi',
         'xarray',
         'pandas',
