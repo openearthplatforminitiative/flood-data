@@ -1,13 +1,13 @@
 import unittest
 import numpy as np
 from test.data.data_generation import generate_test_data, create_ground_truth_dataframe
-from flood_processing.etl.filter_by_upstream import apply_upstream_threshold
-from flood_processing.etl.raster_converter import RasterConverter
+from flood.etl.filter_by_upstream import apply_upstream_threshold
+from flood.etl.raster_converter import RasterConverter
 
 class TestUpstreamFiltering(unittest.TestCase):
     """
     To run this test, run the following command from the root directory:
-    >>> python -m unittest test.test_upstream_filtering
+    >>> python3 -m unittest test.test_upstream_filtering
     """
 
     def test_filter_discharge_by_uparea_simple_case(self):

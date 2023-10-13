@@ -1,4 +1,4 @@
-from flood_processing.etl.utils import load_dataset
+from .utils import load_dataset
 
 def get_filtered_discharge_from_files(discharge_file_path, upstream_file_path, threshold_area=250000, discharge_engine="cfgrib", upstream_engine="netcdf4"):
 

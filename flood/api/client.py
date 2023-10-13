@@ -1,6 +1,6 @@
 import logging
-from glofas_fetcher import GloFASFetcher
-from config import GloFASAPIConfig
+from flood.api.glofas_fetcher import GloFASFetcher
+from flood.api.config import GloFASAPIConfig
 
 logging.basicConfig(level=logging.INFO)
 
@@ -17,7 +17,7 @@ class GloFASClient:
 # Example usage
 if __name__ == "__main__":
     client = GloFASClient(api_url="https://cds.climate.copernicus.eu/api/v2", 
-                          api_key="YOUR_API_KEY")
+                          api_key="<UID>:<APIKEY>")
     config = GloFASAPIConfig(
         year='2023',
         month='10',

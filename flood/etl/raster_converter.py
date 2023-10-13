@@ -1,6 +1,6 @@
 import xarray as xr
 import logging
-from flood_processing.etl.utils import determine_engine
+from flood.etl.utils import determine_engine
 
 logging.basicConfig(level=logging.INFO)
 
