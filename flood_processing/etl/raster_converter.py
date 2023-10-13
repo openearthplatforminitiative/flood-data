@@ -6,7 +6,7 @@ logging.basicConfig(level=logging.INFO)
 
 class RasterConverter:
 
-    def file_to_parquet(self, input_path, output_path, read_engine=None, write_engine='pyarrow', compression='snappy', cols_to_drop=[], drop_na_subset=[], drop_index=False, save_index=None):
+    def file_to_parquet(self, input_path, output_path, read_engine=None, write_engine='pyarrow', compression='snappy', cols_to_drop=None, drop_na_subset=None, drop_index=False, save_index=None):
         """
         Convert a raster (GRIB or NetCDF) file to Parquet format.
         
@@ -32,12 +32,13 @@ class RasterConverter:
             df = ds.to_dataframe()
 
             # Drop unwanted columns
-            for col in cols_to_drop:
-                if col in df.columns:
-                    df = df.drop(columns=col)
+            if cols_to_drop is not None:
+                for col in cols_to_drop:
+                    if col in df.columns:
+                        df = df.drop(columns=col)
 
             # Drop rows with NA values
-            if drop_na_subset:
+            if drop_na_subset is not None:
                 df = df.dropna(subset=drop_na_subset)
 
             df = df.reset_index(drop=drop_index)
@@ -53,7 +54,7 @@ class RasterConverter:
         except Exception as e:
             logging.error(f"Error during conversion of {input_path} to {output_path}: {e}")
 
-    def dataset_to_dataframe(self, ds, cols_to_drop=[], drop_na_subset=[], drop_index=False):
+    def dataset_to_dataframe(self, ds, cols_to_drop=None, drop_na_subset=None, drop_index=False):
 
         """
         Convert a raster in xarray.dataset format to a pandas dataframe.
@@ -67,12 +68,13 @@ class RasterConverter:
             df = ds.to_dataframe()
 
             # Drop unwanted columns
-            for col in cols_to_drop:
-                if col in df.columns:
-                    df = df.drop(columns=col)
+            if cols_to_drop is not None:
+                for col in cols_to_drop:
+                    if col in df.columns:
+                        df = df.drop(columns=col)
 
             # Drop rows with NA values
-            if drop_na_subset:
+            if drop_na_subset is not None:
                 df = df.dropna(subset=drop_na_subset)
 
             df = df.reset_index(drop=drop_index)
