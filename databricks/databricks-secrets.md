@@ -31,3 +31,9 @@ databricks secrets create-scope <scope name> --initial-manage-principal users
 ```bash
 databricks secrets put-secret <scope name> <key>
 ```
+
+## 5. Use secrets
+In Databricks:
+```python
+dbutils.secrets.get(scope = "<scope name>", key = <key>)
+```
