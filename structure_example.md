@@ -13,7 +13,7 @@ flood-data/
 │
 ├── setup.py                            # If you plan to package the project 
 │
-├── src/                                # Source code
+├── flood_processing/                   # Source code
 │   ├── __init__.py
 │   ├── api/                            # Code related to the GloFAS API
 │   │   ├── __init__.py
@@ -24,7 +24,7 @@ flood-data/
 │   │
 │   ├── etl/                            # Extract, Transform, Load operations
 │   │   ├── __init__.py
-│   │   ├── grib_to_parquet.py          # Logic to convert GRIB to Parquet
+│   │   ├── raster_to_parquet.py        # Logic to convert raster files to Parquet
 │   │   └── ...
 │   │
 │   ├── utils/                          # Utility functions and classes
@@ -34,20 +34,17 @@ flood-data/
 │   │
 │   └── ...
 │
-├── tests/                              # Unit tests
+├── test/                              # Unit tests
 │   ├── __init__.py
-│   ├── test_api_client.py
-│   ├── test_glofas_fetcher.py
-│   ├── test_grib_to_parquet.py
-│   ├── test_logger.py
-│   ├── test_config.py
-│   ├── test_error_handling.py
+│   ├── data/                          # Dummy data generation for tests
+│   │   ├── __init__.py
+│   │   ├── data_generation.py
+│   │   └── ...
+│   ├── test_upstream_filtering.py     
 │   └── ...
 │
 ├── databricks/                          # Databricks specific scripts or notebooks
 │   └── ...
-│
-├── infrastructure/                      # Infrastructure as Code scripts (if any, e.g., Terraform)
 │
 └── docs/                                # Documentation (could be auto-generated or manual)
     ├── index.md
