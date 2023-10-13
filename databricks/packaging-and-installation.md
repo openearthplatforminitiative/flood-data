@@ -1,8 +1,6 @@
-# Databricks
+# Build and add package to Databricks
 
-## Build and add package to Databricks
-
-### 1. Building the Project
+## 1. Building the Project
    
 Before you can upload the package to Databricks, you need to build it. To do this, navigate to the root directory of the project and execute the following commands:
 
@@ -12,7 +10,7 @@ python setup.py sdist bdist_wheel
 ```
 This will generate a `.whl` (wheel) file in the `dist/` directory. This wheel file is what you'll upload to Databricks.
 
-### 2. Uploading and Installing the Package to Databricks
+## 2. Uploading and Installing the Package to Databricks
 
 1. Navigate to the Databricks workspace and select the target cluster.
 2. Under the cluster details, click on the `Libraries` tab.
