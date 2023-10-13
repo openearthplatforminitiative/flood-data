@@ -5,6 +5,10 @@
 
 # COMMAND ----------
 
+dbutils.secrets.get(scope = "openepi", key = "cds_api_key")
+
+# COMMAND ----------
+
 aws_bucket_name = "databricks-data-openepi"
 mount_name = "openepi-storage"
 
@@ -42,6 +46,7 @@ dbutils.fs.ls(f"s3a://{aws_bucket_name}/")
 
 # COMMAND ----------
 
+# DBTITLE 1,Remove dummy file
 dbutils.fs.rm(f"s3a://{aws_bucket_name}/s3_test_file.txt")
 
 # COMMAND ----------
