@@ -1,6 +1,6 @@
 # Project Structure
 
-The directory structure of the flood-data repository could look like this:
+The directory structure looks like this:
 
 ```
 flood-data/
@@ -13,7 +13,7 @@ flood-data/
 │
 ├── setup.py                            # If you plan to package the project 
 │
-├── flood_processing/                   # Source code
+├── flood/                              # flood package
 │   ├── __init__.py
 │   ├── api/                            # Code related to the GloFAS API
 │   │   ├── __init__.py
@@ -22,17 +22,10 @@ flood-data/
 │   │   ├── glofas_fetcher.py           # Lambda function to fetch the GRIB data
 │   │   └── ...
 │   │
-│   ├── etl/                            # Extract, Transform, Load operations
-│   │   ├── __init__.py
-│   │   ├── raster_to_parquet.py        # Logic to convert raster files to Parquet
-│   │   └── ...
-│   │
-│   ├── utils/                          # Utility functions and classes
-│   │   ├── __init__.py
-│   │   ├── logger.py                   # Logging utility
-│   │   └── ...
-│   │
-│   └── ...
+│   └── etl/                            # Extract, Transform, Load operations
+│       ├── __init__.py
+│       ├── raster_to_parquet.py        # Logic to convert raster files to Parquet
+│       └── ...
 │
 ├── test/                              # Unit tests
 │   ├── __init__.py
@@ -44,6 +37,7 @@ flood-data/
 │   └── ...
 │
 ├── databricks/                          # Databricks specific scripts or notebooks
+│   ├── packaging-and-installation       # Packaging and installation on Databricks instructions
 │   └── ...
 │
 └── docs/                                # Documentation (could be auto-generated or manual)
