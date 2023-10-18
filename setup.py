@@ -24,7 +24,8 @@ setup(
         'pyarrow',
         'netcdf4',
         'cfgrib',
-        'numpy'
+        'numpy',
+        'ecmwflibs'
     ],
     python_requires='>=3.8',
 )
