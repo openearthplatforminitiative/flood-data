@@ -14,7 +14,16 @@ mount_name = "openepi-storage"
 
 # COMMAND ----------
 
+dbutils.fs.unmount(f"/mnt/{mount_name}")
+
+# COMMAND ----------
+
 dbutils.fs.mount(f"s3a://{aws_bucket_name}", f"/mnt/{mount_name}")
+
+# COMMAND ----------
+
+# MAGIC %sh
+# MAGIC ls /dbfs/mnt/openepi-storage
 
 # COMMAND ----------
 
