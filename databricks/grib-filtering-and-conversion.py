@@ -114,7 +114,7 @@ filtered_df = converter.dataset_to_dataframe(filtered_ds['dis24'],
 # COMMAND ----------
 
 filtered_parquet_filename = f'filtered_{year}_{month}_{day}_{leadtime_hour}.parquet'
-filtered_parquet_folder = f'data/{year}-{month}-{day}/'
+# filtered_parquet_folder = f'data/{year}-{month}-{day}/' # Should create a folder first
 filtered_parquet_folder = ''
 filtered_parquet_file_path = filtered_parquet_folder + filtered_parquet_filename
 converter.dataframe_to_parquet(filtered_df, filtered_parquet_file_path)
