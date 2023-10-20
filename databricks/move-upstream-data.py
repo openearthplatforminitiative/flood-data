@@ -22,7 +22,7 @@ from flood.utils.config import get_config_val
 
 # MAGIC %md
 # MAGIC
-# MAGIC **Hardcoded configuration parameters (should be placed in config file in the future)**
+# MAGIC **Fetch configuration parameters**
 
 # COMMAND ----------
 
