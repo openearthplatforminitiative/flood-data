@@ -4,6 +4,8 @@
 # MAGIC ### Guide to create folder and move upstream data to mounted cloud storage
 # MAGIC
 # MAGIC **Only needs to be performed once (done)**
+# MAGIC
+# MAGIC This guide assumes the file `uparea_glofas_v4_0.nc` has been uploaded to DBFS in `FileStore/flood`.
 
 # COMMAND ----------
 
@@ -14,6 +16,7 @@
 # COMMAND ----------
 
 import os
+from flood.utils.config import get_config_val
 
 # COMMAND ----------
 
@@ -23,10 +26,10 @@ import os
 
 # COMMAND ----------
 
-S3_OPEN_EPI_PATH = os.path.join('mnt', 'openepi-storage')
-S3_GLOFAS_PATH = os.path.join(S3_OPEN_EPI_PATH, 'glofas')
-S3_AUX_DATA_PATH = os.path.join(S3_GLOFAS_PATH, 'auxiliary-data')
-UPSTREAM_FILENAME = 'uparea_glofas_v4_0.nc'
+PYTHON_PREFIX = get_config_val("PYTHON_PREFIX")
+DBUTILS_PREFIX = get_config_val("DBUTILS_PREFIX")
+S3_GLOFAS_AUX_DATA_PATH = get_config_val("S3_GLOFAS_AUX_DATA_PATH")
+GLOFAS_UPSTREAM_FILENAME = get_config_val("GLOFAS_UPSTREAM_FILENAME")
 
 # COMMAND ----------
 
@@ -36,7 +39,7 @@ UPSTREAM_FILENAME = 'uparea_glofas_v4_0.nc'
 
 # COMMAND ----------
 
-dbutils.fs.mkdirs(os.path.join('dbfs:', S3_AUX_DATA_PATH))
+dbutils.fs.mkdirs(os.path.join(DBUTILS_PREFIX, S3_GLOFAS_AUX_DATA_PATH))
 
 # COMMAND ----------
 
@@ -46,8 +49,8 @@ dbutils.fs.mkdirs(os.path.join('dbfs:', S3_AUX_DATA_PATH))
 
 # COMMAND ----------
 
-current_upstream_data_path = os.path.join('dbfs:','FileStore', 'flood', UPSTREAM_FILENAME)
-target_upstream_folder = os.path.join('dbfs:', S3_AUX_DATA_PATH)
+current_upstream_data_path = os.path.join(DBUTILS_PREFIX,'FileStore', 'flood', GLOFAS_UPSTREAM_FILENAME)
+target_upstream_folder = os.path.join(DBUTILS_PREFIX, S3_GLOFAS_AUX_DATA_PATH)
 dbutils.fs.mv(current_upstream_data_path, target_upstream_folder)
 
 # COMMAND ----------

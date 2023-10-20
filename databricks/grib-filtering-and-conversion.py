@@ -14,30 +14,47 @@
 import xarray as xr
 import os
 from datetime import datetime, timedelta
-from flood.etl.utils import load_dataset
+from flood.etl.utils import open_dataset, restrict_dataset_area
 from flood.etl.filter_by_upstream import apply_upstream_threshold
 from flood.etl.raster_converter import RasterConverter
+from flood.utils.config import get_config_val
 
 # COMMAND ----------
 
 # MAGIC %md
 # MAGIC
-# MAGIC **Hardcoded configuration parameters (should be placed in config file in the future)**
+# MAGIC **Fetch configuration parameters**
 
 # COMMAND ----------
 
-ROI_CENTRAL_AFRICA = {'lat_min': -6.0, 'lat_max': 17.0,
-                      'lon_min': -18.0, 'lon_max': 52.0}
-RESOLUTION = 0.05
-BUFFER = RESOLUTION / 4
-UPSTREAM_THRESHOLD = 250000 # m^2
+PYTHON_PREFIX = get_config_val("PYTHON_PREFIX")
+DBUTILS_PREFIX = get_config_val("DBUTILS_PREFIX")
 
-S3_OPEN_EPI_PATH = os.path.join('mnt','openepi-storage')
-S3_GLOFAS_PATH = os.path.join(S3_OPEN_EPI_PATH, 'glofas')
-S3_GLOFAS_API_PATH = os.path.join(S3_GLOFAS_PATH, 'api-downloads')
-S3_AUX_DATA_PATH = os.path.join(S3_GLOFAS_PATH, 'auxiliary-data')
-S3_FILTERED_PATH = os.path.join(S3_GLOFAS_PATH, 'filtered')
-UPSTREAM_FILENAME = 'uparea_glofas_v4_0.nc'
+S3_GLOFAS_DOWNLOADS_PATH = get_config_val("S3_GLOFAS_DOWNLOADS_PATH")
+S3_GLOFAS_AUX_DATA_PATH = get_config_val("S3_GLOFAS_AUX_DATA_PATH")
+S3_GLOFAS_FILTERED_PATH = get_config_val("S3_GLOFAS_FILTERED_PATH")
+GLOFAS_UPSTREAM_FILENAME = get_config_val("GLOFAS_UPSTREAM_FILENAME")
+
+GLOFAS_ROI_CENTRAL_AFRICA = get_config_val("GLOFAS_ROI_CENTRAL_AFRICA")
+GLOFAS_RESOLUTION = get_config_val("GLOFAS_RESOLUTION")
+GLOFAS_BUFFER_DIV = get_config_val("GLOFAS_BUFFER_DIV")
+GLOFAS_UPSTREAM_THRESHOLD = get_config_val("GLOFAS_UPSTREAM_THRESHOLD")
+
+# COMMAND ----------
+
+print([PYTHON_PREFIX, DBUTILS_PREFIX, S3_GLOFAS_DOWNLOADS_PATH, S3_GLOFAS_AUX_DATA_PATH, S3_GLOFAS_FILTERED_PATH, GLOFAS_UPSTREAM_FILENAME, GLOFAS_ROI_CENTRAL_AFRICA, GLOFAS_RESOLUTION, GLOFAS_BUFFER_DIV, GLOFAS_UPSTREAM_THRESHOLD])
+
+# COMMAND ----------
+
+dbutils.fs.ls('/mnt/openepi-storage/glofas')
+
+# COMMAND ----------
+
+buffer = GLOFAS_RESOLUTION / GLOFAS_BUFFER_DIV
+lat_min = GLOFAS_ROI_CENTRAL_AFRICA['lat_min']
+lat_max = GLOFAS_ROI_CENTRAL_AFRICA['lat_max']
+lon_min = GLOFAS_ROI_CENTRAL_AFRICA['lon_min']
+lon_max = GLOFAS_ROI_CENTRAL_AFRICA['lon_max']
 
 # COMMAND ----------
 
@@ -54,8 +71,8 @@ formatted_date = date_for_request.strftime("%Y-%m-%d")
 leadtime_hour = '24'
 discharge_filename = f'download-{leadtime_hour}.grib'
 
-discharge_file_path = os.path.join('/dbfs', S3_GLOFAS_API_PATH, formatted_date, discharge_filename)
-ds_discharge = load_dataset(discharge_file_path)
+discharge_file_path = os.path.join(PYTHON_PREFIX, S3_GLOFAS_DOWNLOADS_PATH, formatted_date, discharge_filename)
+ds_discharge = open_dataset(discharge_file_path)
 
 # COMMAND ----------
 
@@ -65,13 +82,10 @@ ds_discharge = load_dataset(discharge_file_path)
 
 # COMMAND ----------
 
-lat_min, lat_max = ROI_CENTRAL_AFRICA['lat_min'], ROI_CENTRAL_AFRICA['lat_max']
-lon_min, lon_max = ROI_CENTRAL_AFRICA['lon_min'], ROI_CENTRAL_AFRICA['lon_max']
-
-# Perform xarray filtering
-ds_discharge = ds_discharge.sel(
-    latitude=slice(lat_max + BUFFER, lat_min - BUFFER),
-    longitude=slice(lon_min  - BUFFER, lon_max  + BUFFER))
+ds_discharge = restrict_dataset_area(ds_discharge,
+                                     lat_min, lat_max,
+                                     lon_min, lon_max,
+                                     buffer) 
 
 # COMMAND ----------
 
@@ -81,13 +95,8 @@ ds_discharge = ds_discharge.sel(
 
 # COMMAND ----------
 
-upstream_file_path = os.path.join('/dbfs', S3_AUX_DATA_PATH, UPSTREAM_FILENAME)
-ds_upstream = load_dataset(upstream_file_path)
-
-# Perform xarray filtering
-ds_upstream = ds_upstream.sel(
-    latitude=slice(lat_max + BUFFER, lat_min - BUFFER),
-    longitude=slice(lon_min  - BUFFER, lon_max  + BUFFER))
+upstream_file_path = os.path.join(PYTHON_PREFIX, S3_GLOFAS_AUX_DATA_PATH, GLOFAS_UPSTREAM_FILENAME)
+ds_upstream = open_dataset(upstream_file_path)
 
 # COMMAND ----------
 
@@ -98,7 +107,8 @@ ds_upstream = ds_upstream.sel(
 
 filtered_ds = apply_upstream_threshold(ds_discharge, 
                                        ds_upstream, 
-                                       threshold_area=UPSTREAM_THRESHOLD)
+                                       threshold_area=GLOFAS_UPSTREAM_THRESHOLD,
+                                       buffer=buffer)
 
 # COMMAND ----------
 
@@ -121,8 +131,8 @@ filtered_df = converter.dataset_to_dataframe(filtered_ds['dis24'],
 
 # COMMAND ----------
 
-filtered_parquet_folder = os.path.join(S3_FILTERED_PATH, formatted_date)
-dbutils.fs.mkdirs(os.path.join('dbfs:', filtered_parquet_folder))
+filtered_parquet_folder = os.path.join(S3_GLOFAS_FILTERED_PATH, formatted_date)
+dbutils.fs.mkdirs(os.path.join(DBUTILS_PREFIX, filtered_parquet_folder))
 
 # COMMAND ----------
 
@@ -133,6 +143,13 @@ dbutils.fs.mkdirs(os.path.join('dbfs:', filtered_parquet_folder))
 # COMMAND ----------
 
 filtered_parquet_filename = f'filtered-{leadtime_hour}.parquet'
-filtered_parquet_file_path = os.path.join('/dbfs', filtered_parquet_folder, filtered_parquet_filename)
-
+filtered_parquet_file_path = os.path.join(PYTHON_PREFIX, filtered_parquet_folder, filtered_parquet_filename)
 converter.dataframe_to_parquet(filtered_df, filtered_parquet_file_path)
+
+# COMMAND ----------
+
+dbutils.fs.ls('dbfs:/mnt/openepi-storage/glofas/auxiliary-data')
+
+# COMMAND ----------
+
+
