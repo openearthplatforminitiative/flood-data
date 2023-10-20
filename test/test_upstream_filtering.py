@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
-from test.data.data_generation import generate_test_data, create_ground_truth_dataframe
+from test.data.data_generation import (generate_upstream_filtering_test_data,
+                                       create_ground_truth_upstream_filtering_dataframe)
 from flood.etl.filter_by_upstream import apply_upstream_threshold
 from flood.etl.raster_converter import RasterConverter
 
@@ -8,6 +9,9 @@ class TestUpstreamFiltering(unittest.TestCase):
     """
     To run this test, run the following command from the root directory:
     >>> python3 -m unittest test.test_upstream_filtering
+
+    To run all tests, run the following command from the root directory:
+    >>> python3 -m unittest discover test
     """
 
     def test_filter_discharge_by_uparea_simple_case(self):
@@ -27,15 +31,18 @@ class TestUpstreamFiltering(unittest.TestCase):
         converter = RasterConverter()
 
         ds_discharge, ds_upstream, random_lat_indices, random_lon_indices = \
-            generate_test_data(discharge_latitudes, discharge_longitudes,
-                            upstream_latitudes, upstream_longitudes, 
-                            num_forecasts=num_forecasts, num_steps=num_steps, num_random_cells=num_random_cells,
-                            fill_discharge=fill_discharge, fill_upstream_threshold=fill_upstream_threshold,
-                            seed=seed)
+            generate_upstream_filtering_test_data(discharge_latitudes, discharge_longitudes,
+                                                  upstream_latitudes, upstream_longitudes, 
+                                                  num_forecasts=num_forecasts, num_steps=num_steps, 
+                                                  num_random_cells=num_random_cells, fill_discharge=fill_discharge, 
+                                                  fill_upstream_threshold=fill_upstream_threshold, seed=seed)
 
-        ground_truth_df = create_ground_truth_dataframe(ds_discharge, random_lat_indices, 
-                                                        random_lon_indices, upstream_latitudes,
-                                                        upstream_longitudes, fill_discharge=fill_discharge)
+        ground_truth_df = create_ground_truth_upstream_filtering_dataframe(ds_discharge, 
+                                                                           random_lat_indices, 
+                                                                           random_lon_indices, 
+                                                                           upstream_latitudes,
+                                                                           upstream_longitudes, 
+                                                                           fill_discharge=fill_discharge)
 
         ground_truth_df = ground_truth_df.sort_values(by=list(ground_truth_df.columns), ascending=False)
 
