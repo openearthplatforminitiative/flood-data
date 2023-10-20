@@ -1,9 +1,9 @@
-from flood.etl.utils import load_dataset
+from flood.etl.utils import open_dataset
 
 def get_filtered_discharge_from_files(discharge_file_path, upstream_file_path, threshold_area=250000, discharge_engine="cfgrib", upstream_engine="netcdf4"):
 
-    ds_discharge = load_dataset(discharge_file_path, engine=discharge_engine)
-    ds_upstream = load_dataset(upstream_file_path, engine=upstream_engine)
+    ds_discharge = open_dataset(discharge_file_path, engine=discharge_engine)
+    ds_upstream = open_dataset(upstream_file_path, engine=upstream_engine)
 
     return apply_upstream_threshold(ds_discharge, ds_upstream, threshold_area=threshold_area)
 

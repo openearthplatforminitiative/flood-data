@@ -1,6 +1,6 @@
 import xarray as xr
 
-def load_dataset(file_path, engine=None):
+def open_dataset(file_path, engine=None):
     if engine is None:
         engine = determine_engine(file_path)
     return xr.open_dataset(file_path, engine=engine)
