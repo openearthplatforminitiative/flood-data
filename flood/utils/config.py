@@ -1,7 +1,7 @@
 import os
 import json
 
-def load_config(key, default=None, config_filename='config.json'):
+def get_config_val(key, default=None, config_filename='config.json'):
     # Try environment variable first
     value = os.environ.get(key)
     
