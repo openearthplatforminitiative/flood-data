@@ -42,14 +42,6 @@ GLOFAS_UPSTREAM_THRESHOLD = get_config_val("GLOFAS_UPSTREAM_THRESHOLD")
 
 # COMMAND ----------
 
-print([PYTHON_PREFIX, DBUTILS_PREFIX, S3_GLOFAS_DOWNLOADS_PATH, S3_GLOFAS_AUX_DATA_PATH, S3_GLOFAS_FILTERED_PATH, GLOFAS_UPSTREAM_FILENAME, GLOFAS_ROI_CENTRAL_AFRICA, GLOFAS_RESOLUTION, GLOFAS_BUFFER_DIV, GLOFAS_UPSTREAM_THRESHOLD])
-
-# COMMAND ----------
-
-dbutils.fs.ls('/mnt/openepi-storage/glofas')
-
-# COMMAND ----------
-
 buffer = GLOFAS_RESOLUTION / GLOFAS_BUFFER_DIV
 lat_min = GLOFAS_ROI_CENTRAL_AFRICA['lat_min']
 lat_max = GLOFAS_ROI_CENTRAL_AFRICA['lat_max']
@@ -145,11 +137,3 @@ dbutils.fs.mkdirs(os.path.join(DBUTILS_PREFIX, filtered_parquet_folder))
 filtered_parquet_filename = f'filtered-{leadtime_hour}.parquet'
 filtered_parquet_file_path = os.path.join(PYTHON_PREFIX, filtered_parquet_folder, filtered_parquet_filename)
 converter.dataframe_to_parquet(filtered_df, filtered_parquet_file_path)
-
-# COMMAND ----------
-
-dbutils.fs.ls('dbfs:/mnt/openepi-storage/glofas/auxiliary-data')
-
-# COMMAND ----------
-
-

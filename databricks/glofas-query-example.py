@@ -127,7 +127,3 @@ target_file_path = os.path.join(PYTHON_PREFIX, target_folder, target_filename)
 
 # Fetch the data
 client.fetch_grib_data(request_params, target_file_path)
-
-# COMMAND ----------
-
-
