@@ -2,11 +2,11 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 
-def generate_test_data(discharge_latitudes, discharge_longitudes, 
-                       upstream_latitudes, upstream_longitudes, 
-                       num_forecasts=50, num_steps=30, num_random_cells=5,
-                       fill_discharge=100.0, fill_upstream_threshold=300000.0,
-                       seed=42):
+def generate_upstream_filtering_test_data(discharge_latitudes, discharge_longitudes, 
+                                          upstream_latitudes, upstream_longitudes, 
+                                          num_forecasts=50, num_steps=30, num_random_cells=5,
+                                          fill_discharge=100.0, fill_upstream_threshold=300000.0,
+                                          seed=42):
     
     np.random.seed(seed)
 
@@ -69,7 +69,7 @@ def generate_test_data(discharge_latitudes, discharge_longitudes,
 
     return ds_discharge, ds_upstream, random_lat_indices, random_lon_indices
 
-def create_ground_truth_dataframe(ds_discharge, random_lat_indices, 
+def create_ground_truth_upstream_filtering_dataframe(ds_discharge, random_lat_indices, 
                                   random_lon_indices, upstream_latitudes, 
                                   upstream_longitudes, fill_discharge=100.0):
     number = ds_discharge.number.values
@@ -96,3 +96,30 @@ def create_ground_truth_dataframe(ds_discharge, random_lat_indices,
                 df_data['dis24'].append(fill_discharge)
 
     return pd.DataFrame(df_data)
+
+def generate_restrict_dataset_area_test_dataset(lat_min, lat_max, lon_min, lon_max, data_resolution):
+    """
+    Generate a test xarray dataset with latitude and longitude points centered 
+    at increments of 0.025 and 0.075 from the rounded 0.05 values.
+    """
+    initial_offset = data_resolution / 2
+    lat_values = np.arange(lat_max + initial_offset, 
+                           lat_min, #+ initial_offset + data_resolution, 
+                           -data_resolution)
+    lon_values = np.arange(lon_min + initial_offset, 
+                           lon_max, # + initial_offset + data_resolution, 
+                           data_resolution)
+    
+    # Create random data for this range
+    data = np.random.rand(len(lat_values), len(lon_values))
+    
+    ds = xr.Dataset(
+        {
+            'data': (['latitude', 'longitude'], data)
+        },
+        coords={
+            'latitude': lat_values,
+            'longitude': lon_values
+        }
+    )
+    return ds
