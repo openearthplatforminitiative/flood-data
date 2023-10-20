@@ -8,9 +8,20 @@
     "S3_GLOFAS_AUX_DATA_PATH": "mnt/openepi-storage/glofas/auxiliary-data",
     "S3_GLOFAS_FILTERED_PATH": "mnt/openepi-storage/glofas/filtered",
     "GLOFAS_UPSTREAM_FILENAME": "uparea_glofas_v4_0.nc",
+    "GLOFAS_RET_PRD_THRESH_VALS": [2, 5, 20],
+    "GLOFAS_RET_PRD_THRESH_RASTER_FILENAMES": {
+        "2": "RP2ythresholds_GloFASv40.nc",
+        "5": "RP5ythresholds_GloFASv40.nc",
+        "20": "RP20ythresholds_GloFASv40.nc"},
+    "GLOFAS_RET_PRD_THRESH_PARQUET_FILENAMES": {
+        "2": "RP2ythresholds_GloFASv40.parquet",
+        "5": "RP5ythresholds_GloFASv40.parquet",
+        "20": "RP20ythresholds_GloFASv40.parquet"},
+    "GLOFAS_PROCESSED_THRESH_FILENAME": "processed_thresholds.parquet",
     "GLOFAS_ROI_CENTRAL_AFRICA": {"lat_min": -6.0, "lat_max": 17.0,
                            "lon_min": -18.0, "lon_max": 52.0},
     "GLOFAS_RESOLUTION": 0.05,
+    "GLOFAS_PRECISION": 3,
     "GLOFAS_BUFFER_DIV": 4,
     "GLOFAS_BUFFER_MULT": 2,
     "GLOFAS_UPSTREAM_THRESHOLD": 250000

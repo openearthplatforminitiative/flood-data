@@ -26,7 +26,6 @@ from flood.utils.config import get_config_val
 
 # COMMAND ----------
 
-PYTHON_PREFIX = get_config_val("PYTHON_PREFIX")
 DBUTILS_PREFIX = get_config_val("DBUTILS_PREFIX")
 S3_GLOFAS_AUX_DATA_PATH = get_config_val("S3_GLOFAS_AUX_DATA_PATH")
 GLOFAS_UPSTREAM_FILENAME = get_config_val("GLOFAS_UPSTREAM_FILENAME")
