@@ -1,4 +1,6 @@
 {
+    "PYTHON_PREFIX": "/dbfs",
+    "DBUTILS_PREFIX": "dbfs:",
     "S3_OPEN_EPI_PATH": "mnt/openepi-storage",
     "S3_GLOFAS_PATH": "mnt/openepi-storage/glofas",
     "S3_GLOFAS_DOWNLOADS_PATH": "mnt/openepi-storage/glofas/api-downloads",
