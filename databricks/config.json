@@ -1,0 +1,13 @@
+{
+    "S3_OPEN_EPI_PATH": "mnt/openepi-storage",
+    "S3_GLOFAS_PATH": "mnt/openepi-storage/glofas",
+    "S3_GLOFAS_DOWNLOADS_PATH": "mnt/openepi-storage/glofas/api-downloads",
+    "S3_GLOFAS_AUX_DATA_PATH": "mnt/openepi-storage/glofas/auxiliary-data",
+    "S3_GLOFAS_FILTERED_PATH": "mnt/openepi-storage/glofas/filtered",
+    "GLOFAS_UPSTREAM_FILENAME": "uparea_glofas_v4_0.nc",
+    "GLOFAS_ROI_CENTRAL_AFRICA": {"lat_min": -6.0, "lat_max": 17.0,
+                           "lon_min": -18.0, "lon_max": 52.0},
+    "GLOFAS_RESOLUTION": 0.05,
+    "GLOFAS_BUFFER_DIV": 4,
+    "GLOFAS_UPSTREAM_THRESHOLD": 250000
+}
