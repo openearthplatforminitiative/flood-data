@@ -12,3 +12,8 @@ def determine_engine(file_path):
         return "netcdf4"
     else:
         raise ValueError(f"Unrecognized file extension for {file_path}")
+    
+def restrict_dataset_area(ds, lat_min, lat_max, lon_min, lon_max, buffer=0.0125):
+    return ds.sel(
+        latitude=slice(lat_max + buffer, lat_min - buffer),
+        longitude=slice(lon_min  - buffer, lon_max  + buffer))
