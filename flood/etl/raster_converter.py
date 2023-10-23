@@ -28,7 +28,7 @@ class RasterConverter:
             ds = open_dataset(input_path, engine=read_engine)
 
             # Convert the xarray Dataset to a Pandas DataFrame
-            df = ds.to_dataframe()
+            df = ds.to_dataframe().reset_index(drop=drop_index)
 
             # Drop unwanted columns
             if cols_to_drop is not None:
@@ -43,8 +43,6 @@ class RasterConverter:
             # Drop rows with NA values
             if drop_na_subset is not None:
                 df = df.dropna(subset=drop_na_subset)
-
-            df = df.reset_index(drop=drop_index)
 
             # Step 3: Convert the Pandas DataFrame to a Parquet file using pyarrow and snappy compression
             df.to_parquet(output_path, engine=write_engine, compression=compression, index=save_index)
