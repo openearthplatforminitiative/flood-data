@@ -5,7 +5,10 @@ logging.basicConfig(level=logging.INFO)
 
 class RasterConverter:
 
-    def file_to_parquet(self, input_path, output_path, read_engine=None, write_engine='pyarrow', compression='snappy', cols_to_drop=None, drop_na_subset=None, drop_index=False, save_index=None):
+    def file_to_parquet(self, input_path, output_path, read_engine=None, 
+                        write_engine='pyarrow', compression='snappy', 
+                        cols_to_drop=None, cols_to_rename=None, drop_na_subset=None, 
+                        drop_index=False, save_index=None):
         """
         Convert a raster (GRIB or NetCDF) file to Parquet format.
         
@@ -15,6 +18,7 @@ class RasterConverter:
         :param write_engine: The engine to use for writing the Parquet file.
         :param compression: The compression algorithm to use for writing the Parquet file.
         :param cols_to_drop: List of columns to drop from the resulting dataframe.
+        :param cols_to_rename: Dictionary where keys are original column names and values are the new names.
         :param drop_na_subset: List of columns to use for dropping rows with NA values.
         :param drop_index: Whether to drop the index column when resetting the index.
         :param save_index: Whether to save the index column.
@@ -31,6 +35,10 @@ class RasterConverter:
                 for col in cols_to_drop:
                     if col in df.columns:
                         df = df.drop(columns=col)
+
+            # Rename columns
+            if cols_to_rename is not None:
+                df = df.rename(columns=cols_to_rename)
 
             # Drop rows with NA values
             if drop_na_subset is not None:
