@@ -1,5 +1,6 @@
-from pyspark.sql.functions import udf
 from pyspark.sql.types import DoubleType
+from pyspark.sql import functions as F
+from pyspark.sql.window import Window
 
 def round_to_precision(value, precision):
     """
@@ -11,4 +12,88 @@ def create_round_udf(precision=3):
     """
     Create a UDF for rounding to the specified precision.
     """
-    return udf(lambda x: round_to_precision(x, precision), DoubleType())
+    return F.udf(lambda x: round_to_precision(x, precision), DoubleType())
+
+def compute_flood_tendency(df, flood_tendencies, col_name='tendency'):
+
+    # Compute flood tendency once per grid cell
+    grid_cell_tendency = (
+        df
+        .groupBy("latitude", "longitude")
+        .agg(
+            F.max('median_dis').alias('max_median_dis'),
+            F.min('median_dis').alias('min_median_dis'),
+            F.first('control_dis').alias('control_dis')
+        )
+    )
+
+    # Define the tendency based on aggregated values
+    tendency_condition = F.when(
+        F.col('max_median_dis') > F.col('control_dis') * 1.10, 
+        flood_tendencies['increasing']
+    ).when(
+        (F.col('min_median_dis') <= F.col('control_dis') * 0.90) &
+        (F.col('max_median_dis') <= F.col('control_dis') * 1.10),
+        flood_tendencies['decreasing']
+    ).otherwise(flood_tendencies['stagnant'])
+
+    return grid_cell_tendency.withColumn(col_name, tendency_condition)
+
+def compute_flood_intensity(df, flood_intensities, col_name='intensity'):
+
+    # Compute flood intensity once per grid cell
+    grid_cell_intensity = (
+        df
+        .groupBy("latitude", "longitude")
+        .agg(
+            F.max('p_above_20y').alias('max_p_above_20y'),
+            F.max('p_above_5y').alias('max_p_above_5y'),
+            F.max('p_above_2y').alias('max_p_above_2y')
+        )
+    )
+
+    # Define the color (flood intensity) based on aggregated values
+    color_condition = F.when(
+        grid_cell_intensity['max_p_above_20y'] >= 0.30, 
+        flood_intensities['purple']
+    ).when(
+        (grid_cell_intensity['max_p_above_5y'] >= 0.30),
+        flood_intensities['red']
+    ).when(
+        (grid_cell_intensity['max_p_above_2y'] >= 0.30),
+        flood_intensities['yellow']
+    ).otherwise(flood_intensities['gray'])
+
+    return grid_cell_intensity.withColumn(col_name, color_condition)
+
+def compute_flood_peak_timing(df, flood_peak_timings, col_name='peak_timing'):
+    # 1. Filter rows between steps 1 to 10
+    df_filtered = df.filter((F.col("step").between(1, 10)))
+    
+    # 2. Compute the maximum flood probability above the 2 year return period threshold for the first ten days
+    df_max = df_filtered.groupBy("latitude", "longitude").agg(F.max("p_above_2y").alias("max_2y_start"))
+    
+    # 3. Join the max probabilities back to the main DataFrame
+    df = df.join(df_max, ["latitude", "longitude"], "left")
+
+    # 4. Compute the step_of_highest_severity
+    windowSpec = Window.partitionBy("latitude", "longitude")
+    df = df.withColumn("max_20y", F.max("p_above_20y").over(windowSpec))\
+           .withColumn("max_5y", F.max("p_above_5y").over(windowSpec))\
+           .withColumn("peak_step",
+                       F.when(F.col("max_20y") >= 0.30, F.first("step").over(windowSpec.orderBy(F.desc("p_above_20y"))))
+                        .when(F.col("max_5y") >= 0.30, F.first("step").over(windowSpec.orderBy(F.desc("p_above_5y"))))
+                        .otherwise(F.first("step").over(windowSpec.orderBy(F.desc("p_above_2y")))))
+
+    # 5. Determine the peak_timing column
+    peak_condition = F.when(
+        F.col("peak_step").between(1, 3), 
+        flood_peak_timings['black_border']
+    ).when(
+        (F.col("peak_step") > 10) & (F.col("max_2y_start") < 0.30), 
+        flood_peak_timings['grayed_color']
+    ).otherwise(flood_peak_timings['gray_border'])
+    
+    df = df.withColumn(col_name, peak_condition)
+
+    return df.select("latitude", "longitude", "peak_step", col_name).distinct()
