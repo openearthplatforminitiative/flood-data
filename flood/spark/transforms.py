@@ -23,7 +23,9 @@ def compute_flood_tendency(df, flood_tendencies, col_name='tendency'):
         .agg(
             F.max('median_dis').alias('max_median_dis'),
             F.min('median_dis').alias('min_median_dis'),
-            F.first('control_dis').alias('control_dis')
+            F.first('control_dis').alias('control_dis'),
+            F.max('max_dis').alias('max_max_dis'),  
+            F.min('min_dis').alias('min_min_dis')
         )
     )
 
