@@ -4,7 +4,8 @@ from pyspark.sql import Row
 from flood.spark.transforms import (create_round_udf, 
                                     compute_flood_tendency,
                                     compute_flood_intensity,
-                                    compute_flood_peak_timing)
+                                    compute_flood_peak_timing,
+                                    compute_flood_threshold_percentages)
 from flood.utils.config import get_config_val
 
 CONFIG_FILE_PATH = './databricks/config.json'
@@ -40,7 +41,6 @@ class TestSparkUtilities(unittest.TestCase):
         self.assertAlmostEqual(results[0].rounded_value, 19.075, 3)
         self.assertAlmostEqual(results[1].rounded_value, 17.325, 3)
 
-    #Skip
     # @unittest.skip("Skipping test_dataframe_join")
     def test_dataframe_join(self):
         # Test that joining of several dataframes after performing rounding 
@@ -83,6 +83,12 @@ class TestSparkUtilities(unittest.TestCase):
         DECREASING_VAL = FLOOD_TENDENCIES['decreasing']
         TENDENCY_COL_NAME = 'tendency'
 
+        SCHEMA = ["latitude", "longitude", "control_dis",
+                  "control_time", "control_valid_time",
+                  "time", "valid_time", "step",
+                  "p_above_2y", "p_above_5y", "p_above_20y",
+                  "min_dis", "Q1_dis", "median_dis", "Q3_dis", "max_dis"]
+
         # Create synthetic data for testing
         data = [
             # Data for 'increasing' tendency
@@ -106,16 +112,10 @@ class TestSparkUtilities(unittest.TestCase):
         ]
 
         # Create DataFrame using the synthetic data
-        df = self.spark.createDataFrame(data, ["latitude", "longitude", "control_dis", 
-                                               "control_time", "control_valid_time", 
-                                               "time", "valid_time", "step", 
-                                               "p_above_2y", "p_above_5y", "p_above_20y", 
-                                               "min_dis", "Q1_dis", "median_dis", "Q3_dis", "max_dis"])
+        df = self.spark.createDataFrame(data, SCHEMA)
 
         # Using the function
         result_df = compute_flood_tendency(df, FLOOD_TENDENCIES, col_name=TENDENCY_COL_NAME)
-
-        print(result_df.show())
 
         # Get the tendency values for the synthetic data
         resulting_first_tendency = result_df.filter((result_df['latitude'] == 0.0) & (result_df['longitude'] == 0.5)).first()[TENDENCY_COL_NAME]
@@ -139,6 +139,12 @@ class TestSparkUtilities(unittest.TestCase):
         GRAY = FLOOD_INTENSITIES['gray']
         INTENSITY_COL_NAME = 'intensity'
 
+        SCHEMA = ["latitude", "longitude", "control_dis",
+                  "control_time", "control_valid_time", 
+                  "time", "valid_time", "step",
+                  "p_above_2y", "p_above_5y", "p_above_20y",
+                  "min_dis", "Q1_dis", "median_dis", "Q3_dis", "max_dis"]
+
         # Create synthetic data for testing
         data = [
             # Data for 'PURPLE' intensity: max(p_above_20y) >= 0.30
@@ -159,16 +165,10 @@ class TestSparkUtilities(unittest.TestCase):
         ]
 
         # Create DataFrame using the synthetic data
-        df = self.spark.createDataFrame(data, ["latitude", "longitude", "control_dis", 
-                                            "control_time", "control_valid_time", 
-                                            "time", "valid_time", "step", 
-                                            "p_above_2y", "p_above_5y", "p_above_20y", 
-                                            "min_dis", "Q1_dis", "median_dis", "Q3_dis", "max_dis"])
+        df = self.spark.createDataFrame(data, SCHEMA)
 
         # Using the function 
         result_df = compute_flood_intensity(df, FLOOD_INTENSITIES, col_name=INTENSITY_COL_NAME)
-
-        print(result_df.show())
 
         # Get the intensity values for the synthetic data
         resulting_first_intensity = result_df.filter((result_df['latitude'] == 0.0) & (result_df['longitude'] == 0.5)).first()[INTENSITY_COL_NAME]
@@ -190,6 +190,11 @@ class TestSparkUtilities(unittest.TestCase):
         GRAYED_COLOR = FLOOD_PEAK_TIMINGS['grayed_color']
         GRAY_BORDER = FLOOD_PEAK_TIMINGS['gray_border']
         PEAK_TIMING_COL_NAME = 'peak_timing'
+
+        SCHEMA = ["latitude", "longitude", "control_dis", "control_time",
+                  "control_valid_time", "time", "valid_time", "step",
+                  "p_above_2y", "p_above_5y", "p_above_20y",
+                  "min_dis", "Q1_dis", "median_dis", "Q3_dis", "max_dis"]
 
         data_black_border = [
 
@@ -316,15 +321,10 @@ class TestSparkUtilities(unittest.TestCase):
         data = data_black_border + data_grayed_color + data_gray_border
 
         # Create DataFrame using the synthetic data
-        df = self.spark.createDataFrame(data, ["latitude", "longitude", "control_dis", "control_time", 
-                                        "control_valid_time", "time", "valid_time", "step", 
-                                        "p_above_2y", "p_above_5y", "p_above_20y", 
-                                        "min_dis", "Q1_dis", "median_dis", "Q3_dis", "max_dis"])
+        df = self.spark.createDataFrame(data, SCHEMA)
         
         # Compute peak timing
         result_df = compute_flood_peak_timing(df, FLOOD_PEAK_TIMINGS, col_name=PEAK_TIMING_COL_NAME)
-
-        print(result_df.show())
 
         # Get the peak timing values for the synthetic data
         resulting_first_peak_timing = result_df.filter((result_df['latitude'] == 2.275) & (result_df['longitude'] == 2.0)).first()[PEAK_TIMING_COL_NAME]
@@ -335,6 +335,72 @@ class TestSparkUtilities(unittest.TestCase):
         self.assertEqual(resulting_first_peak_timing, BLACK_BORDER)
         self.assertEqual(resulting_second_peak_timing, GRAYED_COLOR)
         self.assertEqual(resulting_third_peak_timing, GRAY_BORDER)
+
+    # @unittest.skip("Skipping test_compute_flood_threshold_percentages")
+    def test_compute_flood_threshold_percentages(self):
+
+        SCHEMA = ["latitude", "longitude", "time", "valid_time", "step", 
+                  "p_above_2y", "p_above_5y", "p_above_20y", 
+                  "min_dis", "Q1_dis", "median_dis", "Q3_dis", "max_dis"]
+        
+        # Create mock forecast dataframe
+        forecast_data = [
+
+            # Ensemble 1
+            (1, 0.5, 0.5, '2023-10-01 00:00:00', 1, '2023-10-02 00:00:00', 100.0),
+            (2, 0.5, 0.5, '2023-10-01 00:00:00', 1, '2023-10-02 00:00:00', 50.0),
+            (3, 0.5, 0.5, '2023-10-01 00:00:00', 1, '2023-10-02 00:00:00', 25.0),
+            (4, 0.5, 0.5, '2023-10-01 00:00:00', 1, '2023-10-02 00:00:00', 75.0),
+            (5, 0.5, 0.5, '2023-10-01 00:00:00', 1, '2023-10-02 00:00:00', 15.0),
+            (6, 0.5, 0.5, '2023-10-01 00:00:00', 1, '2023-10-02 00:00:00', 105.0),
+            (7, 0.5, 0.5, '2023-10-01 00:00:00', 1, '2023-10-02 00:00:00', 35.0),
+            (8, 0.5, 0.5, '2023-10-01 00:00:00', 1, '2023-10-02 00:00:00', 65.0),
+            (9, 0.5, 0.5, '2023-10-01 00:00:00', 1, '2023-10-02 00:00:00', 90.0),
+            (10, 0.5, 0.5, '2023-10-01 00:00:00', 1, '2023-10-02 00:00:00', 120.0),
+
+            # Ensemble 2
+            (1, 2.5, 0.5, '2023-10-05 00:00:00', 17, '2023-10-22 00:00:00', 11.0),
+            (2, 2.5, 0.5, '2023-10-05 00:00:00', 17, '2023-10-22 00:00:00', 9.0),
+            (3, 2.5, 0.5, '2023-10-05 00:00:00', 17, '2023-10-22 00:00:00', 22.0),
+            (4, 2.5, 0.5, '2023-10-05 00:00:00', 17, '2023-10-22 00:00:00', 22.0),
+            (5, 2.5, 0.5, '2023-10-05 00:00:00', 17, '2023-10-22 00:00:00', 14.0),
+            (6, 2.5, 0.5, '2023-10-05 00:00:00', 17, '2023-10-22 00:00:00', 15.0),
+            (7, 2.5, 0.5, '2023-10-05 00:00:00', 17, '2023-10-22 00:00:00', 13.0),
+            (8, 2.5, 0.5, '2023-10-05 00:00:00', 17, '2023-10-22 00:00:00', 7.0),
+            (9, 2.5, 0.5, '2023-10-05 00:00:00', 17, '2023-10-22 00:00:00', 8.0),
+            (10, 2.5, 0.5, '2023-10-05 00:00:00', 17, '2023-10-22 00:00:00', 5.0),
+        ]
+
+        forecast_df = self.spark.createDataFrame(forecast_data, ['number', 'latitude', 'longitude', 'time', 'step', 'valid_time', 'dis24'])
+
+        # Create mock threshold dataframe
+        threshold_data = [
+            (0.5, 0.5, 20.0, 50.0, 120.0),
+            (2.5, 0.5, 9.0, 11.0, 15.0),
+        ]
+        threshold_df = self.spark.createDataFrame(threshold_data, ['latitude', 'longitude', '2y_threshold', '5y_threshold', '20y_threshold'])
+
+        threshold_vals = [2, 5, 20]
+
+        result_df_approx = compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_vals, precision='approx')
+        result_df_exact = compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_vals, precision='exact')
+
+        expected_data_approx = [
+            (0.5, 0.5, '2023-10-01 00:00:00', '2023-10-02 00:00:00', 1, 0.9, 0.7, 0.1, 15.0, 35.0, 65.0, 100.0, 120.0),
+            (2.5, 0.5, '2023-10-05 00:00:00', '2023-10-22 00:00:00', 17, 0.7, 0.6, 0.3, 5.0, 8.0, 11.0, 15.0, 22.0)
+        ]
+        expected_df_approx = self.spark.createDataFrame(expected_data_approx, SCHEMA)
+
+        expected_data_exact = [
+            (0.5, 0.5, '2023-10-01 00:00:00', '2023-10-02 00:00:00', 1, 0.9, 0.7, 0.1, 15.0, 38.75, 70.0, 97.5, 120.0),
+            (2.5, 0.5, '2023-10-05 00:00:00', '2023-10-22 00:00:00', 17, 0.7, 0.6, 0.3, 5.0, 8.25, 12.0, 14.75, 22.0)
+        ]
+        expected_df_exact = self.spark.createDataFrame(expected_data_exact, SCHEMA)
+
+        # Assert that the resulting dataframe matches the expected dataframe.
+        # Sort result by latitude and longitude
+        self.assertEqual(result_df_approx.sort('latitude', 'longitude').collect(), expected_df_approx.collect())
+        self.assertEqual(result_df_exact.sort('latitude', 'longitude').collect(), expected_df_exact.collect())
 
 if __name__ == '__main__':
     unittest.main()

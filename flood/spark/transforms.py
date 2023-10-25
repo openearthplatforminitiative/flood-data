@@ -97,3 +97,44 @@ def compute_flood_peak_timing(df, flood_peak_timings, col_name='peak_timing'):
     df = df.withColumn(col_name, peak_condition)
 
     return df.select("latitude", "longitude", "peak_step", col_name).distinct()
+
+# Define a function to compute the percentage exceeding thresholds for the forecasts dataframe
+def compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_vals, precision='approx'):
+
+    assert precision in ['approx', 'exact'], "Precision must be either 'approx' or 'exact'."
+
+    threshold_cols = [f"{int(threshold)}y_threshold" for threshold in threshold_vals]
+    
+    # Join forecast dataframe with threshold dataframe on latitude and longitude
+    joined_df = forecast_df.join(threshold_df, on=['latitude', 'longitude'])
+    
+    for threshold, col_name in zip(threshold_vals, threshold_cols):
+        exceed_col = f"exceed_{int(threshold)}y"
+        joined_df = joined_df.withColumn(exceed_col, F.when(joined_df['dis24'] >= joined_df[col_name], 1).otherwise(0))
+    
+    # Aggregate to compute percentages
+    agg_exprs = [
+        F.mean(f"exceed_{int(threshold)}y").alias(f"p_above_{int(threshold)}y")
+        for threshold in threshold_vals
+    ]
+
+    # Precompute values
+    q1_dis = F.percentile_approx('dis24', 0.25).alias('Q1_dis') if precision == 'approx'\
+             else F.expr("percentile(dis24, array(0.25))")[0].alias('Q1_dis')
+    median_dis = F.percentile_approx('dis24', 0.5).alias('median_dis') if precision == 'approx'\
+             else F.expr("percentile(dis24, array(0.5))")[0].alias('median_dis')
+    q3_dis = F.percentile_approx('dis24', 0.75).alias('Q3_dis') if precision == 'approx'\
+             else F.expr("percentile(dis24, array(0.75))")[0].alias('Q3_dis')
+
+    # Add 5-number summary computations for 'dis24' column
+    agg_exprs.extend([
+        F.min('dis24').alias('min_dis'),
+        q1_dis,
+        median_dis,
+        q3_dis,
+        F.max('dis24').alias('max_dis')
+    ])
+    
+    results = joined_df.groupBy('latitude', 'longitude', 'time', 'valid_time', 'step').agg(*agg_exprs)
+    
+    return results
