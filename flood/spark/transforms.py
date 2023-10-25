@@ -99,9 +99,9 @@ def compute_flood_peak_timing(df, flood_peak_timings, col_name='peak_timing'):
     return df.select("latitude", "longitude", "peak_step", col_name).distinct()
 
 # Define a function to compute the percentage exceeding thresholds for the forecasts dataframe
-def compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_vals, precision='approx'):
+def compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_vals, accuracy_mode='approx'):
 
-    assert precision in ['approx', 'exact'], "Precision must be either 'approx' or 'exact'."
+    assert accuracy_mode in ['approx', 'exact'], "Accuracy mode must be either 'approx' or 'exact'."
 
     threshold_cols = [f"{int(threshold)}y_threshold" for threshold in threshold_vals]
     
@@ -119,11 +119,11 @@ def compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_val
     ]
 
     # Precompute values
-    q1_dis = F.percentile_approx('dis24', 0.25).alias('Q1_dis') if precision == 'approx'\
+    q1_dis = F.percentile_approx('dis24', 0.25).alias('Q1_dis') if accuracy_mode == 'approx'\
              else F.expr("percentile(dis24, array(0.25))")[0].alias('Q1_dis')
-    median_dis = F.percentile_approx('dis24', 0.5).alias('median_dis') if precision == 'approx'\
+    median_dis = F.percentile_approx('dis24', 0.5).alias('median_dis') if accuracy_mode == 'approx'\
              else F.expr("percentile(dis24, array(0.5))")[0].alias('median_dis')
-    q3_dis = F.percentile_approx('dis24', 0.75).alias('Q3_dis') if precision == 'approx'\
+    q3_dis = F.percentile_approx('dis24', 0.75).alias('Q3_dis') if accuracy_mode == 'approx'\
              else F.expr("percentile(dis24, array(0.75))")[0].alias('Q3_dis')
 
     # Add 5-number summary computations for 'dis24' column

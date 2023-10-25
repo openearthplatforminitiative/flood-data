@@ -382,8 +382,8 @@ class TestSparkUtilities(unittest.TestCase):
 
         threshold_vals = [2, 5, 20]
 
-        result_df_approx = compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_vals, precision='approx')
-        result_df_exact = compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_vals, precision='exact')
+        result_df_approx = compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_vals, accuracy_mode='approx')
+        result_df_exact = compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_vals, accuracy_mode='exact')
 
         expected_data_approx = [
             (0.5, 0.5, '2023-10-01 00:00:00', '2023-10-02 00:00:00', 1, 0.9, 0.7, 0.1, 15.0, 35.0, 65.0, 100.0, 120.0),
