@@ -11,6 +11,13 @@ from flood.utils.config import get_config_val
 CONFIG_FILE_PATH = './databricks/config.json'
 
 class TestSparkUtilities(unittest.TestCase):
+    """
+    To run this test, run the following command from the root directory:
+    >>> python3 -m unittest test.test_spark_transforms
+
+    To run all tests, run the following command from the root directory:
+    >>> python3 -m unittest discover test
+    """
 
     @classmethod
     def setUpClass(cls):
