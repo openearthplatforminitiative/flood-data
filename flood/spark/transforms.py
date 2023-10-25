@@ -76,14 +76,15 @@ def compute_flood_peak_timing(df, flood_peak_timings, col_name='peak_timing'):
     # 3. Join the max probabilities back to the main DataFrame
     df = df.join(df_max, ["latitude", "longitude"], "left")
 
+   # Determine the conditions for each scenario
+    df = df.withColumn("condition",
+                       F.when(F.col("p_above_20y") >= 0.3, F.lit(1))
+                        .when(F.col("p_above_5y") >= 0.3, F.lit(2))
+                        .otherwise(F.lit(3)))
+
     # 4. Compute the step_of_highest_severity
     windowSpec = Window.partitionBy("latitude", "longitude")
-    df = df.withColumn("max_20y", F.max("p_above_20y").over(windowSpec))\
-           .withColumn("max_5y", F.max("p_above_5y").over(windowSpec))\
-           .withColumn("peak_step",
-                       F.when(F.col("max_20y") >= 0.30, F.first("step").over(windowSpec.orderBy(F.desc("p_above_20y"))))
-                        .when(F.col("max_5y") >= 0.30, F.first("step").over(windowSpec.orderBy(F.desc("p_above_5y"))))
-                        .otherwise(F.first("step").over(windowSpec.orderBy(F.desc("p_above_2y")))))
+    df = df.withColumn("peak_step", F.first("step").over(windowSpec.orderBy([F.asc("condition"), F.desc("median_dis")])))
 
     # 5. Determine the peak_timing column
     peak_condition = F.when(
