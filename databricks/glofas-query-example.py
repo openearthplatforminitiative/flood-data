@@ -12,6 +12,7 @@
 # COMMAND ----------
 
 import os
+from datetime import datetime, timedelta
 from flood.api.client import GloFASClient
 from flood.api.config import GloFASAPIConfig
 from flood.utils.config import get_config_val
@@ -65,20 +66,30 @@ client = GloFASClient(GLOFAS_API_URL, f'{user_id}:{api_key}')
 # COMMAND ----------
 
 # Specify date for query
-from datetime import datetime, timedelta
-
 # Whether or not we need to take yesterday's day or not needs to be confirmed
 # by monitoring the CDS website. According to their documentation, the current date
 # is the latest queryable date from the API, so taking -1 probably isn't necessary.
 # date_for_request -= timedelta(days=1)
-date_for_request = datetime.utcnow()
+date_for_request = datetime.utcnow() #- timedelta(days=1)
 formatted_date = date_for_request.strftime("%Y-%m-%d")
 
 # Specify the desired forecast horizon. This variable can be a list of multiples of 
 # 24 all the way up to 720, i.e. leadtime_hour = ['24', '48', ..., '696', '720'].
 # The simplest approach (for now) is to probably fetch one 24-hour period at a time.
 # This is crucial when the ROI becomes large because of the file size.
-leadtime_hour = '24'
+# leadtime_hour = '24'
+leadtime_hours = [
+            '24', '48', '72',
+            '96', '120', '144',
+            '168', '192', '216',
+            '240', '264', '288',
+            '312', '336', '360',
+            '384', '408', '432',
+            '456', '480', '504',
+            '528', '552', '576',
+            '600', '624', '648',
+            '672', '696', '720',
+        ]
 
 # Specify the ROI. The data's resolution is 0.05°x0.05°. To ensure the entirety of
 # the desired ROI is retrieved, we fetch a slightly larger ROI and trim it down to 
@@ -90,16 +101,16 @@ area = [lat_max+query_buffer,
         lon_max+query_buffer]
 
 # Define the config
-config = GloFASAPIConfig(
-    year=date_for_request.year,
-    month=date_for_request.month,
-    day=date_for_request.day,
-    leadtime_hour=leadtime_hour,
-    area=area
-)
+# config = GloFASAPIConfig(
+#     year=date_for_request.year,
+#     month=date_for_request.month,
+#     day=date_for_request.day,
+#     leadtime_hour=leadtime_hour,
+#     area=area
+# )
 
 # Convert config to a dictionary
-request_params = config.to_dict()
+# request_params = config.to_dict()
 
 # COMMAND ----------
 
@@ -120,10 +131,31 @@ dbutils.fs.mkdirs(os.path.join(DBUTILS_PREFIX, target_folder))
 
 # COMMAND ----------
 
-# Define target filepath
-formatted_date = date_for_request.strftime("%Y-%m-%d")
-target_filename = f'download-{leadtime_hour}.grib'
-target_file_path = os.path.join(PYTHON_PREFIX, target_folder, target_filename)
+for l_hour in leadtime_hours:
+    # Define target filepath
+    target_filename = f'download-{l_hour}.grib'
+    target_file_path = os.path.join(PYTHON_PREFIX, target_folder, target_filename)
 
-# Fetch the data
-client.fetch_grib_data(request_params, target_file_path)
+        # Define the config
+    config = GloFASAPIConfig(
+        year=date_for_request.year,
+        month=date_for_request.month,
+        day=date_for_request.day,
+        leadtime_hour=l_hour,
+        area=area
+    )
+
+    # Convert config to a dictionary
+    request_params = config.to_dict()
+
+    # Fetch the data
+    client.fetch_grib_data(request_params, target_file_path)
+
+# COMMAND ----------
+
+# MAGIC %sh
+# MAGIC ls /dbfs/mnt/openepi-storage/glofas/api-downloads/2023-10-26
+
+# COMMAND ----------
+
+

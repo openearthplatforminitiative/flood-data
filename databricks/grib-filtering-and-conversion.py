@@ -13,6 +13,7 @@
 
 import xarray as xr
 import os
+from tqdm import tqdm
 from datetime import datetime, timedelta
 from flood.etl.utils import open_dataset, restrict_dataset_area
 from flood.etl.filter_by_upstream import apply_upstream_threshold
@@ -56,84 +57,77 @@ lon_max = GLOFAS_ROI_CENTRAL_AFRICA['lon_max']
 
 # COMMAND ----------
 
-date_for_request = datetime.utcnow()
+date_for_request = datetime.utcnow() #- timedelta(days=1)
 formatted_date = date_for_request.strftime("%Y-%m-%d")
 
 # leadtime_hour can be one of '24', '48', ..., '696', '720'.
-leadtime_hour = '24'
-discharge_filename = f'download-{leadtime_hour}.grib'
-
-discharge_file_path = os.path.join(PYTHON_PREFIX, S3_GLOFAS_DOWNLOADS_PATH, formatted_date, discharge_filename)
-ds_discharge = open_dataset(discharge_file_path)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC
-# MAGIC **Restrict discharge data to area of interest**
-
-# COMMAND ----------
-
-ds_discharge = restrict_dataset_area(ds_discharge,
-                                     lat_min, lat_max,
-                                     lon_min, lon_max,
-                                     buffer) 
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC
-# MAGIC **Open upstream area NetCDF file and restrict to area of interest**
-
-# COMMAND ----------
-
-upstream_file_path = os.path.join(PYTHON_PREFIX, S3_GLOFAS_AUX_DATA_PATH, GLOFAS_UPSTREAM_FILENAME)
-ds_upstream = open_dataset(upstream_file_path)
-
-# COMMAND ----------
-
-# MAGIC %md 
-# MAGIC **Apply upstream filtering**
-
-# COMMAND ----------
-
-filtered_ds = apply_upstream_threshold(ds_discharge, 
-                                       ds_upstream, 
-                                       threshold_area=GLOFAS_UPSTREAM_THRESHOLD,
-                                       buffer=buffer)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC **Convert to pandas dataframe**
-
-# COMMAND ----------
+# leadtime_hour = '24'
+leadtime_hours = [
+            '24', '48', '72',
+            '96', '120', '144',
+            '168', '192', '216',
+            '240', '264', '288',
+            '312', '336', '360',
+            '384', '408', '432',
+            '456', '480', '504',
+            '528', '552', '576',
+            '600', '624', '648',
+            '672', '696', '720',
+        ]
 
 converter = RasterConverter()
-filtered_df = converter.dataset_to_dataframe(filtered_ds['dis24'], 
-                                             cols_to_drop=['surface'], 
-                                             drop_na_subset=['dis24'], 
-                                             drop_index=False)
 
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC
-# MAGIC **Create target folder**
-
-# COMMAND ----------
-
+#Create target folder
 filtered_parquet_folder = os.path.join(S3_GLOFAS_FILTERED_PATH, formatted_date)
 dbutils.fs.mkdirs(os.path.join(DBUTILS_PREFIX, filtered_parquet_folder))
 
+# Open upstream area NetCDF file and restrict to area of interest
+upstream_file_path = os.path.join(PYTHON_PREFIX, S3_GLOFAS_AUX_DATA_PATH, GLOFAS_UPSTREAM_FILENAME)
+ds_upstream = open_dataset(upstream_file_path)
+
+for l_hour in tqdm(leadtime_hours):
+    discharge_filename = f'download-{l_hour}.grib'
+    discharge_file_path = os.path.join(PYTHON_PREFIX, S3_GLOFAS_DOWNLOADS_PATH, formatted_date, discharge_filename)
+    ds_discharge = open_dataset(discharge_file_path)
+
+    # Restrict discharge data to area of interest
+    ds_discharge = restrict_dataset_area(ds_discharge,
+                                         lat_min, lat_max,
+                                         lon_min, lon_max,
+                                         buffer) 
+
+    # Apply upstream filtering
+    filtered_ds = apply_upstream_threshold(ds_discharge, 
+                                           ds_upstream, 
+                                           threshold_area=GLOFAS_UPSTREAM_THRESHOLD,
+                                           buffer=buffer)
+    
+    # Convert to pandas dataframe
+    filtered_df = converter.dataset_to_dataframe(filtered_ds['dis24'], 
+                                                 cols_to_drop=['surface'], 
+                                                 drop_na_subset=['dis24'], 
+                                                 drop_index=False)
+    
+    # Save to Parquet
+    filtered_parquet_filename = f'filtered-{l_hour}.parquet'
+    filtered_parquet_file_path = os.path.join(PYTHON_PREFIX, filtered_parquet_folder, filtered_parquet_filename)
+    converter.dataframe_to_parquet(filtered_df, filtered_parquet_file_path)
+
 # COMMAND ----------
 
-# MAGIC %md
+# MAGIC %sh
 # MAGIC
-# MAGIC **Save to Parquet**
+# MAGIC ls /dbfs/mnt/openepi-storage/glofas/api-downloads/2023-10-26
+# MAGIC
+# MAGIC
+# MAGIC
 
 # COMMAND ----------
 
-filtered_parquet_filename = f'filtered-{leadtime_hour}.parquet'
-filtered_parquet_file_path = os.path.join(PYTHON_PREFIX, filtered_parquet_folder, filtered_parquet_filename)
-converter.dataframe_to_parquet(filtered_df, filtered_parquet_file_path)
+# MAGIC %sh
+# MAGIC ls /dbfs/mnt/openepi-storage/glofas/filtered/2023-10-25
+# MAGIC
+
+# COMMAND ----------
+
+
