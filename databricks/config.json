@@ -7,6 +7,9 @@
     "S3_GLOFAS_DOWNLOADS_PATH": "mnt/openepi-storage/glofas/api-downloads",
     "S3_GLOFAS_AUX_DATA_PATH": "mnt/openepi-storage/glofas/auxiliary-data",
     "S3_GLOFAS_FILTERED_PATH": "mnt/openepi-storage/glofas/filtered",
+    "S3_GLOFAS_PROCESSED_PATH": "mnt/openepi-storage/glofas/processed",
+    "GLOFAS_PROCESSED_SUMMARY_FORECAST_FILENAME": "processed_summary_forecast.parquet",
+    "GLOFAS_PROCESSED_DETAILED_FORECAST_FILENAME": "processed_detailed_forecast.parquet",
     "GLOFAS_UPSTREAM_FILENAME": "uparea_glofas_v4_0.nc",
     "GLOFAS_RET_PRD_THRESH_VALS": [2, 5, 20],
     "GLOFAS_RET_PRD_THRESH_RASTER_FILENAMES": {
@@ -40,5 +43,6 @@
         "black_border": "BB",
         "grayed_color": "GC",
         "gray_border": "GB"
-    }
+    },
+    "USE_FIRST_AS_CONTROL": 1
 }
