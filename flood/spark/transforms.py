@@ -77,7 +77,7 @@ def compute_flood_peak_timing(df, flood_peak_timings, col_name='peak_timing'):
     df_max = df_filtered.groupBy("latitude", "longitude").agg(F.max("p_above_2y").alias("max_2y_start"))
     
     # 3. Join the max probabilities back to the main DataFrame
-    df = df.join(df_max, ["latitude", "longitude"], "left")
+    df = df.join(F.broadcast(df_max), ["latitude", "longitude"], how="left")
 
     # Determine the conditions for each scenario
     df = df.withColumn("condition",
@@ -125,7 +125,7 @@ def compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_val
     threshold_cols = [f"{int(threshold)}y_threshold" for threshold in threshold_vals]
     
     # Join forecast dataframe with threshold dataframe on latitude and longitude
-    joined_df = forecast_df.join(threshold_df, on=['latitude', 'longitude'])
+    joined_df = forecast_df.join(threshold_df, on=['latitude', 'longitude'], how="left")
     
     for threshold, col_name in zip(threshold_vals, threshold_cols):
         exceed_col = f"exceed_{int(threshold)}y"
