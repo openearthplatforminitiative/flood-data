@@ -69,6 +69,7 @@ def compute_flood_intensity(df, flood_intensities, col_name='intensity'):
     return grid_cell_intensity.withColumn(col_name, color_condition)
 
 def compute_flood_peak_timing(df, flood_peak_timings, col_name='peak_timing'):
+
     # 1. Filter rows between steps 1 to 10
     df_filtered = df.filter((F.col("step").between(1, 10)))
     
@@ -78,15 +79,30 @@ def compute_flood_peak_timing(df, flood_peak_timings, col_name='peak_timing'):
     # 3. Join the max probabilities back to the main DataFrame
     df = df.join(df_max, ["latitude", "longitude"], "left")
 
-   # Determine the conditions for each scenario
+    # Determine the conditions for each scenario
     df = df.withColumn("condition",
                        F.when(F.col("p_above_20y") >= 0.3, F.lit(1))
                         .when(F.col("p_above_5y") >= 0.3, F.lit(2))
-                        .otherwise(F.lit(3)))
+                        .when(F.col("p_above_2y") >= 0.3, F.lit(3))
+                        .otherwise(F.lit(4)))
 
     # 4. Compute the step_of_highest_severity
-    windowSpec = Window.partitionBy("latitude", "longitude")
-    df = df.withColumn("peak_step", F.first("step").over(windowSpec.orderBy([F.asc("condition"), F.desc("median_dis")])))
+    windowSpec = Window.partitionBy("latitude", "longitude")\
+                       .orderBy([F.asc("condition"), F.desc("median_dis")])
+    
+    # Retrieve the first row (peak step) for each partition (lat, lon group)
+    # Define the peak_day as the valid_time of the peak forecast step minus one day
+    df = df.withColumn("row_num", F.row_number().over(windowSpec))\
+           .filter(F.col("row_num") == 1)\
+           .select("latitude", "longitude", "max_2y_start", "step", "valid_time")\
+           .withColumnRenamed("step", "peak_step")\
+           .withColumn("peak_day", F.date_sub("valid_time", 1))\
+           .drop("valid_time")   
+    
+    # Old method, using first() with sorted window may supposedly not lead to desired result
+    # See: https://stackoverflow.com/a/33878701
+    # windowSpec = Window.partitionBy("latitude", "longitude")
+    # df = df.withColumn("peak_step", F.first("step").over(windowSpec.orderBy([F.asc("condition"), F.desc("median_dis")])))
 
     # 5. Determine the peak_timing column
     peak_condition = F.when(
@@ -99,7 +115,7 @@ def compute_flood_peak_timing(df, flood_peak_timings, col_name='peak_timing'):
     
     df = df.withColumn(col_name, peak_condition)
 
-    return df.select("latitude", "longitude", "peak_step", col_name).distinct()
+    return df
 
 # Define a function to compute the percentage exceeding thresholds for the forecasts dataframe
 def compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_vals, accuracy_mode='approx'):
