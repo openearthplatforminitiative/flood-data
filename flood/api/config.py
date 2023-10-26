@@ -8,8 +8,10 @@ class GloFASAPIConfig:
     }
 
     def __init__(self, year, month, day, leadtime_hour, area, product_type='ensemble_perturbed_forecasts'):
-        assert product_type in ['ensemble_perturbed_forecasts', 'control_forecast'], \
-            "Invalid product_type. Should be 'ensemble_perturbed_forecasts' or 'control_forecast'."
+        assert product_type in ['ensemble_perturbed_forecasts', 
+                                'control_forecast', 
+                                ['control_forecast', 'ensemble_perturbed_forecasts']], \
+            "Invalid product_type. Should be 'ensemble_perturbed_forecasts' or 'control_forecast' or ['control_forecast', 'ensemble_perturbed_forecasts']."
         
         self.year = year
         self.month = month
