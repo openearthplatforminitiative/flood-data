@@ -519,9 +519,15 @@ class TestSparkUtilities(unittest.TestCase):
     # @unittest.skip("Skipping test_compute_flood_threshold_percentages")
     def test_compute_flood_threshold_percentages(self):
 
-        SCHEMA = ["latitude", "longitude", "time", "valid_time", "step", 
-                  "p_above_2y", "p_above_5y", "p_above_20y", 
-                  "min_dis", "Q1_dis", "median_dis", "Q3_dis", "max_dis"]
+        FORECAST_SCHEMA = ['number', 'latitude', 'longitude', 'time', 
+                           'step', 'valid_time', 'dis24']
+        
+        THRESHOLD_SCHEMA = ['latitude', 'longitude', '2y_threshold', 
+                            '5y_threshold', '20y_threshold']
+
+        OUTPUT_SCHEMA = ["latitude", "longitude", "time", "valid_time", "step", 
+                         "p_above_2y", "p_above_5y", "p_above_20y", 
+                         "min_dis", "Q1_dis", "median_dis", "Q3_dis", "max_dis"]
         
         # Create mock forecast dataframe
         forecast_data = [
@@ -549,16 +555,30 @@ class TestSparkUtilities(unittest.TestCase):
             (8, 2.5, 0.5, '2023-10-05 00:00:00', 17, '2023-10-22 00:00:00', 7.0),
             (9, 2.5, 0.5, '2023-10-05 00:00:00', 17, '2023-10-22 00:00:00', 8.0),
             (10, 2.5, 0.5, '2023-10-05 00:00:00', 17, '2023-10-22 00:00:00', 5.0),
+
+            # Ensemble 3 (odd number of values)
+            (1, 5.5, 1.5, '2023-10-01 00:00:00', 9, '2023-10-10 00:00:00', 11.0),
+            (2, 5.5, 1.5, '2023-10-01 00:00:00', 9, '2023-10-10 00:00:00', 9.0),
+            (3, 5.5, 1.5, '2023-10-01 00:00:00', 9, '2023-10-10 00:00:00', 22.0),
+            (4, 5.5, 1.5, '2023-10-01 00:00:00', 9, '2023-10-10 00:00:00', 22.0),
+            (5, 5.5, 1.5, '2023-10-01 00:00:00', 9, '2023-10-10 00:00:00', 14.0),
+            (6, 5.5, 1.5, '2023-10-01 00:00:00', 9, '2023-10-10 00:00:00', 15.0),
+            (7, 5.5, 1.5, '2023-10-01 00:00:00', 9, '2023-10-10 00:00:00', 13.0),
+            (8, 5.5, 1.5, '2023-10-01 00:00:00', 9, '2023-10-10 00:00:00', 7.0),
+            (9, 5.5, 1.5, '2023-10-01 00:00:00', 9, '2023-10-10 00:00:00', 8.0),
+            (10, 5.5, 1.5, '2023-10-01 00:00:00', 9, '2023-10-10 00:00:00', 5.0),
+            (11, 5.5, 1.5, '2023-10-01 00:00:00', 9, '2023-10-10 00:00:00', 6.0),
         ]
 
-        forecast_df = self.spark.createDataFrame(forecast_data, ['number', 'latitude', 'longitude', 'time', 'step', 'valid_time', 'dis24'])
+        forecast_df = self.spark.createDataFrame(forecast_data, FORECAST_SCHEMA)
 
         # Create mock threshold dataframe
         threshold_data = [
             (0.5, 0.5, 20.0, 50.0, 120.0),
             (2.5, 0.5, 9.0, 11.0, 15.0),
+            (5.5, 1.5, 10.0, 13.0, 16.0)
         ]
-        threshold_df = self.spark.createDataFrame(threshold_data, ['latitude', 'longitude', '2y_threshold', '5y_threshold', '20y_threshold'])
+        threshold_df = self.spark.createDataFrame(threshold_data, THRESHOLD_SCHEMA)
 
         threshold_vals = [2, 5, 20]
 
@@ -567,18 +587,22 @@ class TestSparkUtilities(unittest.TestCase):
 
         expected_data_approx = [
             (0.5, 0.5, '2023-10-01 00:00:00', '2023-10-02 00:00:00', 1, 0.9, 0.7, 0.1, 15.0, 35.0, 65.0, 100.0, 120.0),
-            (2.5, 0.5, '2023-10-05 00:00:00', '2023-10-22 00:00:00', 17, 0.7, 0.6, 0.3, 5.0, 8.0, 11.0, 15.0, 22.0)
+            (2.5, 0.5, '2023-10-05 00:00:00', '2023-10-22 00:00:00', 17, 0.7, 0.6, 0.3, 5.0, 8.0, 11.0, 15.0, 22.0),
+            (5.5, 1.5, '2023-10-01 00:00:00', '2023-10-10 00:00:00', 9, 6/11, 5/11, 2/11, 5.0, 7.0, 11.0, 15.0, 22.0)
         ]
-        expected_df_approx = self.spark.createDataFrame(expected_data_approx, SCHEMA)
+        expected_df_approx = self.spark.createDataFrame(expected_data_approx, OUTPUT_SCHEMA)
 
+        # The 'exact' quantiles Q1 and Q3 are computed differently than the norm when the number of values is odd,
+        # so using 'approx' mode for the quantiles is preferred.
         expected_data_exact = [
             (0.5, 0.5, '2023-10-01 00:00:00', '2023-10-02 00:00:00', 1, 0.9, 0.7, 0.1, 15.0, 38.75, 70.0, 97.5, 120.0),
-            (2.5, 0.5, '2023-10-05 00:00:00', '2023-10-22 00:00:00', 17, 0.7, 0.6, 0.3, 5.0, 8.25, 12.0, 14.75, 22.0)
+            (2.5, 0.5, '2023-10-05 00:00:00', '2023-10-22 00:00:00', 17, 0.7, 0.6, 0.3, 5.0, 8.25, 12.0, 14.75, 22.0),
+            (5.5, 1.5, '2023-10-01 00:00:00', '2023-10-10 00:00:00', 9, 6/11, 5/11, 2/11, 5.0, 7.5, 11.0, 14.5, 22.0)
         ]
-        expected_df_exact = self.spark.createDataFrame(expected_data_exact, SCHEMA)
+        expected_df_exact = self.spark.createDataFrame(expected_data_exact, OUTPUT_SCHEMA)
 
         # Assert that the resulting dataframe matches the expected dataframe.
-        # Sort result by latitude and longitude
+        # Sort result by latitude and longitude as the order of the rows is not guaranteed.
         self.assertEqual(result_df_approx.sort('latitude', 'longitude').collect(), expected_df_approx.collect())
         self.assertEqual(result_df_exact.sort('latitude', 'longitude').collect(), expected_df_exact.collect())
 
