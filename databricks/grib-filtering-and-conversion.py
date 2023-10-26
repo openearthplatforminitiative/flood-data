@@ -41,6 +41,8 @@ GLOFAS_RESOLUTION = get_config_val("GLOFAS_RESOLUTION")
 GLOFAS_BUFFER_DIV = get_config_val("GLOFAS_BUFFER_DIV")
 GLOFAS_UPSTREAM_THRESHOLD = get_config_val("GLOFAS_UPSTREAM_THRESHOLD")
 
+USE_CONTROL_MEMBER_IN_ENSEMBLE = get_config_val("USE_CONTROL_MEMBER_IN_ENSEMBLE")
+
 # COMMAND ----------
 
 buffer = GLOFAS_RESOLUTION / GLOFAS_BUFFER_DIV
@@ -87,8 +89,28 @@ ds_upstream = open_dataset(upstream_file_path)
 
 for l_hour in tqdm(leadtime_hours):
     discharge_filename = f'download-{l_hour}.grib'
-    discharge_file_path = os.path.join(PYTHON_PREFIX, S3_GLOFAS_DOWNLOADS_PATH, formatted_date, discharge_filename)
-    ds_discharge = open_dataset(discharge_file_path)
+    discharge_file_path = os.path.join(PYTHON_PREFIX, 
+                                       S3_GLOFAS_DOWNLOADS_PATH, 
+                                       formatted_date, 
+                                       discharge_filename)
+
+    # Load control forecast (cf)
+    # Could be emty if it wasn't downloaded i API query
+    ds_cf = open_dataset(discharge_file_path,
+                         backend_kwargs={'filter_by_keys': {'dataType': 'cf'}})
+
+    # Load perturbed forecast (pf)
+    ds_pf = open_dataset(discharge_file_path,
+                         backend_kwargs={'filter_by_keys': {'dataType': 'pf'}})
+    
+    if USE_CONTROL_MEMBER_IN_ENSEMBLE:
+        ds_discharge = xr.concat([ds_cf, ds_pf], dim='number')
+        print('Combining control and ensemble')
+    else:
+        ds_discharge = ds_pf
+        print('Using only ensemble')
+
+    # ds_discharge = open_dataset(discharge_file_path)
 
     # Restrict discharge data to area of interest
     ds_discharge = restrict_dataset_area(ds_discharge,
@@ -125,7 +147,7 @@ for l_hour in tqdm(leadtime_hours):
 # COMMAND ----------
 
 # MAGIC %sh
-# MAGIC ls /dbfs/mnt/openepi-storage/glofas/filtered/2023-10-25
+# MAGIC ls /dbfs/mnt/openepi-storage/glofas/filtered/2023-10-26
 # MAGIC
 
 # COMMAND ----------

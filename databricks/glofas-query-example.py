@@ -34,6 +34,8 @@ GLOFAS_ROI_CENTRAL_AFRICA = get_config_val("GLOFAS_ROI_CENTRAL_AFRICA")
 GLOFAS_RESOLUTION = get_config_val("GLOFAS_RESOLUTION")
 GLOFAS_BUFFER_MULT = get_config_val("GLOFAS_BUFFER_MULT")
 
+USE_CONTROL_MEMBER_IN_ENSEMBLE = get_config_val("USE_CONTROL_MEMBER_IN_ENSEMBLE")
+
 # COMMAND ----------
 
 query_buffer = GLOFAS_RESOLUTION * GLOFAS_BUFFER_MULT
@@ -100,6 +102,13 @@ area = [lat_max+query_buffer,
         lat_min-query_buffer, 
         lon_max+query_buffer]
 
+if USE_CONTROL_MEMBER_IN_ENSEMBLE:
+        product_type = ['control_forecast', 'ensemble_perturbed_forecasts']
+        print('Retrieving both control and ensemble')
+else: 
+        product_type = 'ensemble_perturbed_forecasts'
+        print('Retrieving only ensemble')
+
 # Define the config
 # config = GloFASAPIConfig(
 #     year=date_for_request.year,
@@ -142,7 +151,8 @@ for l_hour in leadtime_hours:
         month=date_for_request.month,
         day=date_for_request.day,
         leadtime_hour=l_hour,
-        area=area
+        area=area,
+        product_type=product_type
     )
 
     # Convert config to a dictionary
