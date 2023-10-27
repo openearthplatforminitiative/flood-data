@@ -71,13 +71,17 @@ def compute_flood_intensity(df, flood_intensities, col_name='intensity'):
 def compute_flood_peak_timing(df, flood_peak_timings, col_name='peak_timing'):
 
     # 1. Filter rows between steps 1 to 10
-    df_filtered = df.filter((F.col("step").between(1, 10)))
+    filtered_df = df.filter((F.col("step").between(1, 10)))
     
-    # 2. Compute the maximum flood probability above the 2 year return period threshold for the first ten days
-    df_max = df_filtered.groupBy("latitude", "longitude").agg(F.max("p_above_2y").alias("max_2y_start"))
+    # 2. Compute the maximum flood probability above the 2 year 
+    # return period threshold for the first ten days
+    max_df = filtered_df.groupBy("latitude", "longitude")\
+                        .agg(F.max("p_above_2y").alias("max_2y_start"))
     
     # 3. Join the max probabilities back to the main DataFrame
-    df = df.join(F.broadcast(df_max), ["latitude", "longitude"], how="left")
+    # Note: max_df used to be broadcasted, but this isn't strictly necessary
+    # as the input DataFrame 'df' is already partitioned by latitude and longitude
+    df = df.join(max_df, ["latitude", "longitude"], how="left")
 
     # Determine the conditions for each scenario
     df = df.withColumn("condition",
@@ -138,19 +142,19 @@ def compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_val
     ]
 
     # Precompute values
-    q1_dis = F.percentile_approx('dis24', 0.25).alias('Q1_dis') if accuracy_mode == 'approx'\
-             else F.expr("percentile(dis24, 0.25)").alias('Q1_dis')
-    median_dis = F.percentile_approx('dis24', 0.5).alias('median_dis') if accuracy_mode == 'approx'\
-             else F.expr("percentile(dis24, 0.5)").alias('median_dis')
-    q3_dis = F.percentile_approx('dis24', 0.75).alias('Q3_dis') if accuracy_mode == 'approx'\
-             else F.expr("percentile(dis24, 0.75)").alias('Q3_dis')
+    q1_dis = F.percentile_approx('dis24', 0.25) if accuracy_mode == 'approx'\
+             else F.expr("percentile(dis24, 0.25)")
+    median_dis = F.percentile_approx('dis24', 0.5) if accuracy_mode == 'approx'\
+             else F.expr("percentile(dis24, 0.5)")
+    q3_dis = F.percentile_approx('dis24', 0.75) if accuracy_mode == 'approx'\
+             else F.expr("percentile(dis24, 0.75)")
 
     # Add 5-number summary computations for 'dis24' column
     agg_exprs.extend([
         F.min('dis24').alias('min_dis'),
-        q1_dis,
-        median_dis,
-        q3_dis,
+        q1_dis.alias('Q1_dis'),
+        median_dis.alias('median_dis'),
+        q3_dis.alias('Q3_dis'),
         F.max('dis24').alias('max_dis')
     ])
     
