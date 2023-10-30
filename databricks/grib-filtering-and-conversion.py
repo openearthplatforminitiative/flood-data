@@ -87,6 +87,11 @@ dbutils.fs.mkdirs(os.path.join(DBUTILS_PREFIX, filtered_parquet_folder))
 upstream_file_path = os.path.join(PYTHON_PREFIX, S3_GLOFAS_AUX_DATA_PATH, GLOFAS_UPSTREAM_FILENAME)
 ds_upstream = open_dataset(upstream_file_path)
 
+if USE_CONTROL_MEMBER_IN_ENSEMBLE:
+    print('Combining control and ensemble')
+else:
+    print('Using only ensemble')
+
 for l_hour in tqdm(leadtime_hours):
     discharge_filename = f'download-{l_hour}.grib'
     discharge_file_path = os.path.join(PYTHON_PREFIX, 
@@ -105,10 +110,8 @@ for l_hour in tqdm(leadtime_hours):
     
     if USE_CONTROL_MEMBER_IN_ENSEMBLE:
         ds_discharge = xr.concat([ds_cf, ds_pf], dim='number')
-        print('Combining control and ensemble')
     else:
         ds_discharge = ds_pf
-        print('Using only ensemble')
 
     # ds_discharge = open_dataset(discharge_file_path)
 
@@ -148,8 +151,3 @@ for l_hour in tqdm(leadtime_hours):
 
 # MAGIC %sh
 # MAGIC ls /dbfs/mnt/openepi-storage/glofas/filtered/2023-10-26
-# MAGIC
-
-# COMMAND ----------
-
-

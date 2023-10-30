@@ -164,7 +164,7 @@ for l_hour in leadtime_hours:
 # COMMAND ----------
 
 # MAGIC %sh
-# MAGIC ls /dbfs/mnt/openepi-storage/glofas/api-downloads/2023-10-26
+# MAGIC ls /dbfs/mnt/openepi-storage/glofas/api-downloads/2023-10-27
 
 # COMMAND ----------
 
