@@ -12,7 +12,7 @@
 # COMMAND ----------
 
 # MAGIC %sh
-# MAGIC ls /dbfs/mnt/openepi-storage/glofas
+# MAGIC ls /dbfs/mnt/openepi-storage/glofas/processed
 
 # COMMAND ----------
 
@@ -23,7 +23,8 @@ from flood.spark.transforms import (create_round_udf,
                                     compute_flood_tendency,
                                     compute_flood_intensity,
                                     compute_flood_peak_timing,
-                                    compute_flood_threshold_percentages)
+                                    compute_flood_threshold_percentages,
+                                    add_geometry)
 from pyspark.sql import functions as F
 from pyspark.sql.types import (StructType,
                                StructField, 
@@ -67,6 +68,7 @@ S3_GLOFAS_AUX_DATA_PATH = get_config_val("S3_GLOFAS_AUX_DATA_PATH")
 GLOFAS_RET_PRD_THRESH_PARQUET_FILENAMES = get_config_val("GLOFAS_RET_PRD_THRESH_PARQUET_FILENAMES")
 GLOFAS_RET_PRD_THRESH_VALS = get_config_val("GLOFAS_RET_PRD_THRESH_VALS")
 GLOFAS_PRECISION = get_config_val("GLOFAS_PRECISION")
+GLOFAS_RESOLUTION = get_config_val('GLOFAS_RESOLUTION')
 GLOFAS_PROCESSED_THRESH_FILENAME = get_config_val("GLOFAS_PROCESSED_THRESH_FILENAME")
 S3_GLOFAS_FILTERED_PATH = get_config_val("S3_GLOFAS_FILTERED_PATH")
 S3_GLOFAS_PROCESSED_PATH = get_config_val("S3_GLOFAS_PROCESSED_PATH")
@@ -78,6 +80,12 @@ GLOFAS_FLOOD_INTENSITIES = get_config_val('GLOFAS_FLOOD_INTENSITIES')
 GLOFAS_FLOOD_PEAK_TIMINGS = get_config_val('GLOFAS_FLOOD_PEAK_TIMINGS')
 
 USE_FIRST_AS_CONTROL = get_config_val('USE_FIRST_AS_CONTROL')
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC **Define parameters to read the dataframes**
 
 # COMMAND ----------
 
@@ -111,6 +119,12 @@ processed_discharge_filepath = os.path.join(DBUTILS_PREFIX, S3_GLOFAS_FILTERED_P
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC
+# MAGIC **Read the GloFAS forecast data**
+
+# COMMAND ----------
+
 # Load all the forecast data from a folder into a single dataframe
 all_forecasts_df = spark.read.schema(CustomSchemaWithoutTimestamp)\
                         .parquet(processed_discharge_filepath)\
@@ -122,57 +136,49 @@ all_forecasts_df = spark.read.schema(CustomSchemaWithoutTimestamp)\
 
 # COMMAND ----------
 
-all_forecasts_df.show(5)
-
-# COMMAND ----------
-
-# For testing purposes only
-
-# min_test_latitude = 2.1
-# max_test_latitude = 2.5
-# min_test_longitude = 10.35
-# max_test_longitude = 11.2
-
-# all_forecasts_df = all_forecasts_df.filter(
-#     (all_forecasts_df.latitude >= min_test_latitude) & 
-#     (all_forecasts_df.latitude <= max_test_latitude) & 
-#     (all_forecasts_df.longitude >= min_test_longitude) & 
-#     (all_forecasts_df.longitude <= max_test_longitude)
-# )
-
-# COMMAND ----------
-
+# Repartition dataframe to group by unique latitude and longitude pairs, 
+# optimizing join operations on spatial coordinates.
 all_forecasts_df = all_forecasts_df.repartition(100, "latitude", "longitude")
 
 # COMMAND ----------
 
 # Read and broadcast the threshold dataframe
-threshold_df = spark.read.parquet(os.path.join(DBUTILS_PREFIX, S3_GLOFAS_AUX_DATA_PATH, GLOFAS_PROCESSED_THRESH_FILENAME))
-
-# For testing purposes only
-# threshold_df = threshold_df.filter(
-#     (threshold_df.latitude >= min_test_latitude) & 
-#     (threshold_df.latitude <= max_test_latitude) & 
-#     (threshold_df.longitude >= min_test_longitude) & 
-#     (threshold_df.longitude <= max_test_longitude)
-# )
-
-broadcast_threshold_df = F.broadcast(threshold_df)
+threshold_file_path = os.path.join(DBUTILS_PREFIX, S3_GLOFAS_AUX_DATA_PATH, 
+                                   GLOFAS_PROCESSED_THRESH_FILENAME)
+# Round the lat/lon columns as a safety measure
+# although it is assumed to already have been
+# done in the threshold joining operation
+threshold_df = spark.read.parquet(threshold_file_path)\
+                         .withColumn("latitude", round_udf("latitude"))\
+                         .withColumn("longitude", round_udf("longitude"))
 
 # COMMAND ----------
 
-broadcast_threshold_df.show(5)
+# Broadcast thresholds as it is joined to forecast dataframe
+# threshold_df = F.broadcast(threshold_df)
+
+# Repartitioning might be better than broadcasting
+threshold_df = threshold_df.repartition(100, "latitude", "longitude")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC **Compute the detailed forecast and cache it**
 
 # COMMAND ----------
 
 detailed_forecast_df = compute_flood_threshold_percentages(all_forecasts_df, 
-                                                           broadcast_threshold_df, 
+                                                           threshold_df, 
                                                            GLOFAS_RET_PRD_THRESH_VALS, 
                                                            accuracy_mode='approx')
+detailed_forecast_df = detailed_forecast_df.cache()
 
 # COMMAND ----------
 
-detailed_forecast_df = detailed_forecast_df.cache()
+# MAGIC %md 
+# MAGIC
+# MAGIC **Load the control forecast**
 
 # COMMAND ----------
 
@@ -199,42 +205,82 @@ else:
 
 # COMMAND ----------
 
-# For testing purposes only
-# control_df = control_df.filter(
-#     (control_df.latitude >= min_test_latitude) & 
-#     (control_df.latitude <= max_test_latitude) & 
-#     (control_df.longitude >= min_test_longitude) & 
-#     (control_df.longitude <= max_test_longitude)
-# )
+# Broadcast thresholds as it is joined to detailed forecast dataframe
+# control_df = F.broadcast(control_df)
+
+# Repartitioning might be better than broadcasting
+control_df = control_df.repartition(100, "latitude", "longitude")
 
 # COMMAND ----------
 
+# Add control discharge to the detailed forecast
 detailed_with_control_df = detailed_forecast_df.join(control_df, 
                                                      on=['latitude', 'longitude'], 
                                                      how="left")
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC
+# MAGIC **Create the forecast dataframes of interest**
+
+# COMMAND ----------
+
+# Compute the summary forecast values
 tendency_df = compute_flood_tendency(detailed_with_control_df, GLOFAS_FLOOD_TENDENCIES, col_name='tendency')
 intensity_df = compute_flood_intensity(detailed_forecast_df, GLOFAS_FLOOD_INTENSITIES, col_name='intensity')
 peak_timing_df = compute_flood_peak_timing(detailed_forecast_df, GLOFAS_FLOOD_PEAK_TIMINGS, col_name='peak_timing')
 
 # COMMAND ----------
 
+# Join the three tables together to create a single summary dataframe
 tendency_and_intensity_df = tendency_df.join(intensity_df, on=['latitude', 'longitude'])
 summary_forecast_df = peak_timing_df.join(tendency_and_intensity_df, on=['latitude', 'longitude'])
 
 # COMMAND ----------
 
-target_folder = os.path.join(DBUTILS_PREFIX, S3_GLOFAS_PROCESSED_PATH, formatted_date)
-dbutils.fs.mkdirs(target_folder)
-summary_forecast_file_path = os.path.join(target_folder, GLOFAS_PROCESSED_SUMMARY_FORECAST_FILENAME)
-summary_forecast_file_path
+# Add the grid geometry to the forecast dataframes 
+# for simple creation geometry column in geopandas
+summary_forecast_df = add_geometry(summary_forecast_df, GLOFAS_RESOLUTION / 2, round_udf)
+detailed_forecast_df = add_geometry(detailed_forecast_df, GLOFAS_RESOLUTION / 2, round_udf)
 
 # COMMAND ----------
 
+# Restrict summary forecast to only the cells that
+# have a relevant flood forecast (no 'Gray' intensity)
+summary_forecast_df = summary_forecast_df.filter(
+    summary_forecast_df['intensity'] != GLOFAS_FLOOD_INTENSITIES['gray'])
+# Filter the detailed forecast with the idenitified
+# grid cells identified in the summary dataframe
+detailed_forecast_df = detailed_forecast_df.join(
+    summary_forecast_df.select(['latitude', 'longitude']), 
+    on=["latitude", "longitude"], how="inner")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC **Defining paths**
+
+# COMMAND ----------
+
+# Create folder on cloud storage
+target_folder = os.path.join(DBUTILS_PREFIX, S3_GLOFAS_PROCESSED_PATH, formatted_date)
+dbutils.fs.mkdirs(target_folder)
+
+# Define summary forecast file path
+summary_forecast_file_path = os.path.join(target_folder, GLOFAS_PROCESSED_SUMMARY_FORECAST_FILENAME)
+print(summary_forecast_file_path)
+
+# Define detailed forecast file path
 detailed_forecast_file_path = os.path.join(target_folder, GLOFAS_PROCESSED_DETAILED_FORECAST_FILENAME)
-detailed_forecast_file_path
+print(detailed_forecast_file_path)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC **Write to mounted cloud storage (and database?)**
 
 # COMMAND ----------
 
@@ -246,50 +292,26 @@ detailed_forecast_df.write.parquet(detailed_forecast_file_path)
 
 # COMMAND ----------
 
+# If the processed data should be written to a PostgreSQL database, 
+# this could be a way of achieving that. If writing to both cloud 
+# storage and database, a .cache() call should be made on both the
+# summary and detailed forecasts before writing to cloud storage to
+# avoid recomputing when writing to database.
 
+# db_properties = {
+#     "user": "your_username",
+#     "password": "your_password",
+#     "driver": "org.postgresql.Driver"
+# }
 
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-# Inspect processed data in pandas
-import pandas as pd
-pandas_summary_df = pd.read_parquet(os.path.join(PYTHON_PREFIX, 
-                                         S3_GLOFAS_PROCESSED_PATH, 
-                                         formatted_date, 
-                                         GLOFAS_PROCESSED_SUMMARY_FORECAST_FILENAME)
-                            )
+# db_url = "jdbc:postgresql://your_host:your_port/your_database_name"
 
 # COMMAND ----------
 
-pandas_summary_df
+# summary_forecast_df.write.jdbc(url=db_url, table="summary_forecast", 
+#                                mode="overwrite", properties=db_properties)
 
 # COMMAND ----------
 
-pandas_summary_df[(pandas_summary_df['latitude'] == 2.375) & (pandas_summary_df['longitude'] == 10.525)]
-
-# COMMAND ----------
-
-pandas_summary_df[(pandas_summary_df['latitude'] == 2.425) & (pandas_summary_df['longitude'] == 10.475)]
-
-# COMMAND ----------
-
-pandas_summary_df[(pandas_summary_df['latitude'] == 1.925) & (pandas_summary_df['longitude'] == 10.775)]
-
-# COMMAND ----------
-
-pandas_summary_df[(pandas_summary_df['latitude'] == 0.425) & (pandas_summary_df['longitude'] == 12.175)]
-
-# COMMAND ----------
-
-dbutils.fs.ls('dbfs:/mnt/openepi-storage/glofas/processed/2023-10-25')
-
-# COMMAND ----------
-
-
+# detailed_forecast_df.write.jdbc(url=db_url, table="detailed_forecast", 
+#                                 mode="overwrite", properties=db_properties)
