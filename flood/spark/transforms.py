@@ -117,7 +117,8 @@ def compute_flood_peak_timing(df, flood_peak_timings, col_name='peak_timing'):
         flood_peak_timings['grayed_color']
     ).otherwise(flood_peak_timings['gray_border'])
     
-    df = df.withColumn(col_name, peak_condition)
+    df = df.withColumn(col_name, peak_condition)\
+           .drop("max_2y_start")
 
     return df
 
