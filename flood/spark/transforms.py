@@ -161,3 +161,30 @@ def compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_val
     results = joined_df.groupBy('latitude', 'longitude', 'time', 'valid_time', 'step').agg(*agg_exprs)
     
     return results
+
+def add_geometry(df, half_grid_size, round_udf):
+    """
+    Add a geometry column to the DataFrame.
+
+    :param df: The DataFrame.
+    :param half_grid_size: The half grid size.
+    :param round_udf: The UDF for rounding for consistency with other DataFrames.
+
+    :return: The DataFrame with a geometry column.
+    """
+    return df.withColumn("min_latitude", round_udf(F.col("latitude") - half_grid_size))\
+             .withColumn("max_latitude", round_udf(F.col("latitude") + half_grid_size))\
+             .withColumn("min_longitude", round_udf(F.col("longitude") - half_grid_size))\
+             .withColumn("max_longitude", round_udf(F.col("longitude") + half_grid_size))\
+             .withColumn("wkt",\
+                 F.concat(F.lit("POLYGON (("),\
+                     F.col("min_longitude"), F.lit(" "), F.col("min_latitude"), F.lit(","),\
+                     F.col("min_longitude"), F.lit(" "), F.col("max_latitude"), F.lit(","),\
+                     F.col("max_longitude"), F.lit(" "), F.col("max_latitude"), F.lit(","),\
+                     F.col("max_longitude"), F.lit(" "), F.col("min_latitude"), F.lit(","),\
+                     F.col("min_longitude"), F.lit(" "), F.col("min_latitude"),\
+                     F.lit("))")))\
+             .drop("min_latitude")\
+             .drop("max_latitude")\
+             .drop("min_longitude")\
+             .drop("max_longitude")
