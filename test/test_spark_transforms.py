@@ -1,8 +1,8 @@
 import unittest
 from pyspark.sql import SparkSession
 from pyspark.sql import Row
-from flood.spark.transforms import (create_round_udf, 
-                                    compute_flood_tendency,
+from pyspark.sql import functions as F
+from flood.spark.transforms import (compute_flood_tendency,
                                     compute_flood_intensity,
                                     compute_flood_peak_timing,
                                     compute_flood_threshold_percentages)
@@ -41,13 +41,14 @@ class TestSparkUtilities(unittest.TestCase):
         # Test the rounding functionality
         data = [Row(value=19.0750000024), Row(value=17.324999994)]
         df = self.spark.createDataFrame(data)
-        round_udf = create_round_udf()
-        rounded_df = df.withColumn("rounded_value", round_udf("value"))
+        precision = 3
+        
+        rounded_df = df.withColumn("rounded_value", F.round("value", precision))
         results = rounded_df.collect()
 
         # Check the results
-        self.assertAlmostEqual(results[0].rounded_value, 19.075, 3)
-        self.assertAlmostEqual(results[1].rounded_value, 17.325, 3)
+        self.assertEqual(results[0].rounded_value, 19.075, precision)
+        self.assertEqual(results[1].rounded_value, 17.325, precision)
 
     # @unittest.skip("Skipping test_dataframe_join")
     def test_dataframe_join(self):
@@ -67,9 +68,8 @@ class TestSparkUtilities(unittest.TestCase):
         self.assertEqual(len(results_without_rounding), 0)
         
         # Apply rounding UDF
-        round_udf = create_round_udf(precision=precision)
-        df1_rounded = df1.withColumn("lat", round_udf("lat")).withColumn("lon", round_udf("lon"))
-        df2_rounded = df2.withColumn("lat", round_udf("lat")).withColumn("lon", round_udf("lon"))
+        df1_rounded = df1.withColumn("lat", F.round("lat", precision)).withColumn("lon", F.round("lon", precision))
+        df2_rounded = df2.withColumn("lat", F.round("lat", precision)).withColumn("lon", F.round("lon", precision))
         
         # Join the dataframes after rounding
         joined_df = df1_rounded.join(df2_rounded, on=['lat', 'lon'], how='inner')
@@ -77,8 +77,8 @@ class TestSparkUtilities(unittest.TestCase):
 
         # Check the results
         self.assertEqual(len(results), 1)
-        self.assertAlmostEqual(results[0].lat, 19.075, precision)
-        self.assertAlmostEqual(results[0].lon, 17.325, precision)
+        self.assertEqual(results[0].lat, 19.075, precision)
+        self.assertEqual(results[0].lon, 17.325, precision)
         self.assertEqual(results[0].val1, 5)
         self.assertEqual(results[0].val2, 10)
 

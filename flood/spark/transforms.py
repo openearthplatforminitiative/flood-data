@@ -1,18 +1,5 @@
-from pyspark.sql.types import DoubleType
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
-
-def round_to_precision(value, precision):
-    """
-    Round a value to the given number of decimal places.
-    """
-    return round(value, precision)
-
-def create_round_udf(precision=3):
-    """
-    Create a UDF for rounding to the specified precision.
-    """
-    return F.udf(lambda x: round_to_precision(x, precision), DoubleType())
 
 def compute_flood_tendency(df, flood_tendencies, col_name='tendency'):
 
@@ -163,20 +150,20 @@ def compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_val
     
     return results
 
-def add_geometry(df, half_grid_size, round_udf):
+def add_geometry(df, half_grid_size, precision):
     """
     Add a geometry column to the DataFrame.
 
     :param df: The DataFrame.
     :param half_grid_size: The half grid size.
-    :param round_udf: The UDF for rounding for consistency with other DataFrames.
+    :param precision: The precision to use for rounding.
 
     :return: The DataFrame with a geometry column.
     """
-    return df.withColumn("min_latitude", round_udf(F.col("latitude") - half_grid_size))\
-             .withColumn("max_latitude", round_udf(F.col("latitude") + half_grid_size))\
-             .withColumn("min_longitude", round_udf(F.col("longitude") - half_grid_size))\
-             .withColumn("max_longitude", round_udf(F.col("longitude") + half_grid_size))\
+    return df.withColumn("min_latitude", F.round(F.col("latitude") - half_grid_size, precision))\
+             .withColumn("max_latitude", F.round(F.col("latitude") - half_grid_size, precision))\
+             .withColumn("min_longitude", F.round(F.col("latitude") - half_grid_size, precision))\
+             .withColumn("max_longitude", F.round(F.col("latitude") - half_grid_size, precision))\
              .withColumn("wkt",\
                  F.concat(F.lit("POLYGON (("),\
                      F.col("min_longitude"), F.lit(" "), F.col("min_latitude"), F.lit(","),\
