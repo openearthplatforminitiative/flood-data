@@ -19,8 +19,7 @@
 import os
 from datetime import datetime, timedelta
 from flood.utils.config import get_config_val
-from flood.spark.transforms import (create_round_udf, 
-                                    compute_flood_tendency,
+from flood.spark.transforms import (compute_flood_tendency,
                                     compute_flood_intensity,
                                     compute_flood_peak_timing,
                                     compute_flood_threshold_percentages,
@@ -128,8 +127,8 @@ processed_discharge_filepath = os.path.join(DBUTILS_PREFIX, S3_GLOFAS_FILTERED_P
 # Load all the forecast data from a folder into a single dataframe
 all_forecasts_df = spark.read.schema(CustomSchemaWithoutTimestamp)\
                         .parquet(processed_discharge_filepath)\
-                        .withColumn("latitude", round_udf("latitude"))\
-                        .withColumn("longitude", round_udf("longitude"))\
+                        .withColumn("latitude", F.round("latitude", GLOFAS_PRECISION))\
+                        .withColumn("longitude", F.round("longitude", GLOFAS_PRECISION))\
                         .withColumn("time", F.to_date(F.to_timestamp(F.col("time") / 1e9)))\
                         .withColumn("valid_time", F.to_date(F.to_timestamp(F.col("valid_time") / 1e9)))\
                         .withColumn("step", (F.col("step") / (60 * 60 * 24 * 1e9)).cast("int"))
@@ -149,13 +148,10 @@ threshold_file_path = os.path.join(DBUTILS_PREFIX, S3_GLOFAS_AUX_DATA_PATH,
 # although it is assumed to already have been
 # done in the threshold joining operation
 threshold_df = spark.read.parquet(threshold_file_path)\
-                         .withColumn("latitude", round_udf("latitude"))\
-                         .withColumn("longitude", round_udf("longitude"))
+                         .withColumn("latitude", F.round("latitude", GLOFAS_PRECISION))\
+                         .withColumn("longitude", F.round("longitude", GLOFAS_PRECISION))
 
 # COMMAND ----------
-
-# Broadcast thresholds as it is joined to forecast dataframe
-# threshold_df = F.broadcast(threshold_df)
 
 # Repartitioning might be better than broadcasting
 threshold_df = threshold_df.repartition(100, "latitude", "longitude")
@@ -191,19 +187,13 @@ else:
     control_file_path = os.path.join(DBUTILS_PREFIX, S3_GLOFAS_FILTERED_PATH, formatted_date, 'control.parquet')
     control_df = spark.read.schema(CustomSchemaWithoutTimestamp)\
                         .parquet(control_file_path)\
-                        .withColumn("latitude", round_udf("latitude"))\
-                        .withColumn("longitude", round_udf("longitude"))\
+                        .withColumn("latitude", F.round("latitude", GLOFAS_PRECISION))\
+                        .withColumn("longitude", F.round("longitude", GLOFAS_PRECISION))\
                         .withColumnRenamed('dis24', 'control_dis')\
                         .drop('step', 'number', 'time', 'valid_time')
-                        # Control dataframe's time and valid_time aren't necessary
-                        # .withColumn("control_time", F.to_timestamp(F.col("time") / 1e9)).drop('time')\
-                        # .withColumn("control_valid_time", F.to_timestamp(F.col("valid_time") / 1e9)).drop('valid_time')\
     print('Used GloFAS control')
 
 # COMMAND ----------
-
-# Broadcast thresholds as it is joined to detailed forecast dataframe
-# control_df = F.broadcast(control_df)
 
 # Repartitioning might be better than broadcasting
 control_df = control_df.repartition(100, "latitude", "longitude")
@@ -238,8 +228,8 @@ summary_forecast_df = peak_timing_df.join(tendency_and_intensity_df, on=['latitu
 
 # Add the grid geometry to the forecast dataframes 
 # for simple creation geometry column in geopandas
-summary_forecast_df = add_geometry(summary_forecast_df, GLOFAS_RESOLUTION / 2, round_udf)
-detailed_forecast_df = add_geometry(detailed_forecast_df, GLOFAS_RESOLUTION / 2, round_udf)
+summary_forecast_df = add_geometry(summary_forecast_df, GLOFAS_RESOLUTION / 2, GLOFAS_PRECISION)
+detailed_forecast_df = add_geometry(detailed_forecast_df, GLOFAS_RESOLUTION / 2, GLOFAS_PRECISION)
 
 # COMMAND ----------
 
