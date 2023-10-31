@@ -193,11 +193,8 @@ else:
                         .parquet(control_file_path)\
                         .withColumn("latitude", round_udf("latitude"))\
                         .withColumn("longitude", round_udf("longitude"))\
-                        .drop('step')\
                         .withColumnRenamed('dis24', 'control_dis')\
-                        .drop('number')\
-                        .drop('time')\
-                        .drop('valid_time')
+                        .drop('step', 'number', 'time', 'valid_time')
                         # Control dataframe's time and valid_time aren't necessary
                         # .withColumn("control_time", F.to_timestamp(F.col("time") / 1e9)).drop('time')\
                         # .withColumn("control_valid_time", F.to_timestamp(F.col("valid_time") / 1e9)).drop('valid_time')\
