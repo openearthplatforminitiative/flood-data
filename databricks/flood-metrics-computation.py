@@ -94,12 +94,6 @@ formatted_date
 
 # COMMAND ----------
 
-# Create UDF for rounding latitude and longitude
-# to ensure joining on these values is successful
-round_udf = create_round_udf(GLOFAS_PRECISION)
-
-# COMMAND ----------
-
 CustomSchemaWithoutTimestamp = StructType([
     StructField("number", LongType(), True),
     StructField("latitude", DoubleType(), True),
