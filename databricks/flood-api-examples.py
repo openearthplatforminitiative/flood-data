@@ -92,8 +92,8 @@ def get_grid_cell_bounds(lat, lon, grid_size=0.05, precision=3):
     - For example, for a grid_size of 0.05:
       * An input latitude of -5.8 and longitude of 37.75 would result in a 
         bounding box from latitude -5.8 to -5.75 and longitude 37.75 to 37.8.
-      * An input latitude of -5.81 and longitude of -37.7501 would result in a 
-        bounding box from latitude -5.85 to -5.8 and longitude -37.8 to -37.75.
+      * An input latitude of -5.81 and longitude of 37.7501 would result in a 
+        bounding box from latitude -5.85 to -5.8 and longitude 37.75 to 37.8.
 
     Parameters:
     - lat (float): The latitude of the point.
@@ -182,7 +182,7 @@ print(are_longitudes_equal)  # Should be True
 # COMMAND ----------
 
 # Assume the user provides this in the query
-user_lat, user_lon, fetch_neighbors = -5.81, -37.7501, True
+user_lat, user_lon, fetch_neighbors = -5.81, 37.7501, True
 
 # COMMAND ----------
 
@@ -231,3 +231,7 @@ primary_cell_df
 # COMMAND ----------
 
 neighbors_only_df
+
+# COMMAND ----------
+
+
