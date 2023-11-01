@@ -6,3 +6,4 @@ pip install netcdf4==1.6.4
 pip install ecmwflibs==0.5.3
 pip install pyarrow==13.0.0
 pip install xarray==2023.1.0
+pip install geopandas==0.14.0
