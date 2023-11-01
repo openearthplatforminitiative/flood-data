@@ -17,6 +17,7 @@
 
 import os
 from flood.utils.config import get_config_val
+from flood.spark.transforms import add_geometry
 from pyspark.sql import functions as F
 
 # COMMAND ----------
@@ -55,6 +56,7 @@ S3_GLOFAS_AUX_DATA_PATH = get_config_val("S3_GLOFAS_AUX_DATA_PATH")
 GLOFAS_RET_PRD_THRESH_PARQUET_FILENAMES = get_config_val("GLOFAS_RET_PRD_THRESH_PARQUET_FILENAMES")
 GLOFAS_RET_PRD_THRESH_VALS = get_config_val("GLOFAS_RET_PRD_THRESH_VALS")
 GLOFAS_PRECISION = get_config_val("GLOFAS_PRECISION")
+GLOFAS_RESOLUTION = get_config_val('GLOFAS_RESOLUTION')
 GLOFAS_PROCESSED_THRESH_FILENAME = get_config_val("GLOFAS_PROCESSED_THRESH_FILENAME")
 
 # COMMAND ----------
@@ -97,6 +99,16 @@ for next_df in dataframes[1:]:
 # Check if the count after joining is still the same
 combined_row_count = combined_df.count()
 assert combined_row_count == original_count, f"The count after joining ({combined_row_count}) is not the same as before ({original_count})."
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC **Add geometry column to easily load parquet file in GeoPandas**
+
+# COMMAND ----------
+
+combined_df = add_geometry(combined_df, GLOFAS_RESOLUTION / 2, GLOFAS_PRECISION)
 
 # COMMAND ----------
 

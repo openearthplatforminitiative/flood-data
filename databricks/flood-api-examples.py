@@ -234,4 +234,20 @@ neighbors_only_df
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC
+# MAGIC **Open and query the threshold data**
 
+# COMMAND ----------
+
+threshold_df_file_path = os.path.join(PYTHON_PREFIX, S3_GLOFAS_AUX_DATA_PATH, GLOFAS_PROCESSED_THRESH_FILENAME)
+
+df_thresh = read_with_geopandas(threshold_df_file_path)
+
+# COMMAND ----------
+
+primary_cell_df_thresh = df_thresh[df_thresh['geometry'].intersects(reduced_geometry)]
+
+# COMMAND ----------
+
+primary_cell_df_thresh
