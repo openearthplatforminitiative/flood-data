@@ -45,15 +45,12 @@ flood-data/
 │   ├── test_restrict_dataset.py        # Test the dataset restriction mechanism
 │   └── test_spark_transforms.py        # Test Spark transforms
 │
-├── databricks/                         # Databricks specific scripts or notebooks
-│   ├── scripts/                        # Init scripts for cluster
-│   ├── guides/                         # Helpful guides for using code in Databricks
-│   ├── config.json                     # Configuration parameters and constants for all notebooks
-│   ├── glofas-API-query.py             # Notebook for fetching and downloading GloFAS data
-│   ├── glofas-transform.py             # Notebook for converting raster GloFAS data to Parquet
-│   ├── glofas-forecast-computation.py  # Notebook for computing summary and detailed forecasts
-│   └── ...
-│
-└── docs/                                # Documentation (todo...)
-    └── index.md
+└── databricks/                         # Databricks specific scripts or notebooks
+    ├── scripts/                        # Init scripts for cluster
+    ├── guides/                         # Helpful guides for using code in Databricks
+    ├── config.json                     # Configuration parameters and constants for all notebooks
+    ├── glofas-API-query.py             # Notebook for fetching and downloading GloFAS data
+    ├── glofas-transform.py             # Notebook for converting raster GloFAS data to Parquet
+    ├── glofas-forecast-computation.py  # Notebook for computing summary and detailed forecasts
+    └── ...
 ```
