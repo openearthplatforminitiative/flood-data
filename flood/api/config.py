@@ -7,12 +7,18 @@ class GloFASAPIConfig:
         'format': 'grib'
     }
 
-    def __init__(self, year, month, day, leadtime_hour, area):
+    def __init__(self, year, month, day, leadtime_hour, area, product_type='ensemble_perturbed_forecasts'):
+        assert product_type in ['ensemble_perturbed_forecasts', 
+                                'control_forecast', 
+                                ['control_forecast', 'ensemble_perturbed_forecasts']], \
+            "Invalid product_type. Should be 'ensemble_perturbed_forecasts' or 'control_forecast' or ['control_forecast', 'ensemble_perturbed_forecasts']."
+        
         self.year = year
         self.month = month
         self.day = day
         self.leadtime_hour = leadtime_hour
         self.area = area
+        self.product_type = product_type
 
     def to_dict(self):
         """Returns the config as a dictionary"""
@@ -22,6 +28,7 @@ class GloFASAPIConfig:
             'month': self.month,
             'day': self.day,
             'leadtime_hour': self.leadtime_hour,
-            'area': self.area
+            'area': self.area,
+            'product_type': self.product_type
         })
         return config

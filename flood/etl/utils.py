@@ -1,9 +1,9 @@
 import xarray as xr
 
-def open_dataset(file_path, engine=None):
+def open_dataset(file_path, engine=None, **kwargs):
     if engine is None:
         engine = determine_engine(file_path)
-    return xr.open_dataset(file_path, engine=engine)
+    return xr.open_dataset(file_path, engine=engine, **kwargs)
 
 def determine_engine(file_path):
     if file_path.endswith(".grib"):
