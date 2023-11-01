@@ -100,8 +100,9 @@ area = [lat_max+query_buffer,
 
 # COMMAND ----------
 
-target_folder = os.path.join(S3_GLOFAS_DOWNLOADS_PATH, formatted_date)
-dbutils.fs.mkdirs(os.path.join(DBUTILS_PREFIX, target_folder))
+target_folder = os.path.join(PYTHON_PREFIX, S3_GLOFAS_DOWNLOADS_PATH, formatted_date)
+print(target_folder)
+os.makedirs(target_folder, exist_ok=True)
 
 # COMMAND ----------
 
@@ -113,7 +114,7 @@ dbutils.fs.mkdirs(os.path.join(DBUTILS_PREFIX, target_folder))
 
 # Define target filepath
 control_filename = 'control.grib'
-control_file_path = os.path.join(PYTHON_PREFIX, target_folder, control_filename)
+control_file_path = os.path.join(target_folder, control_filename)
 
     # Define the config
 config = GloFASAPIConfig(
@@ -128,13 +129,10 @@ config = GloFASAPIConfig(
 # Convert config to a dictionary
 request_params = config.to_dict()
 
-# Fetch the data
-client.fetch_grib_data(request_params, control_file_path)
-
 # COMMAND ----------
 
-# MAGIC %sh
-# MAGIC ls /dbfs/mnt/openepi-storage/glofas/api-downloads/2023-10-25
+# Fetch the data
+client.fetch_grib_data(request_params, control_file_path)
 
 # COMMAND ----------
 
@@ -143,14 +141,16 @@ converter = RasterConverter()
 buffer = GLOFAS_RESOLUTION / GLOFAS_BUFFER_DIV
 
 #Create target folder
-filtered_parquet_folder = os.path.join(S3_GLOFAS_FILTERED_PATH, formatted_date)
-dbutils.fs.mkdirs(os.path.join(DBUTILS_PREFIX, filtered_parquet_folder))
+filtered_parquet_folder = os.path.join(PYTHON_PREFIX, S3_GLOFAS_FILTERED_PATH, formatted_date)
+os.makedirs(filtered_parquet_folder, exist_ok=True)
 
 # Open upstream area NetCDF file and restrict to area of interest
 upstream_file_path = os.path.join(PYTHON_PREFIX, S3_GLOFAS_AUX_DATA_PATH, GLOFAS_UPSTREAM_FILENAME)
 ds_upstream = open_dataset(upstream_file_path)
 
 ds_control = open_dataset(control_file_path)
+
+# COMMAND ----------
 
 # Restrict discharge data to area of interest
 ds_control = restrict_dataset_area(ds_control,
@@ -178,13 +178,9 @@ filtered_control_df.info()
 
 # Save to Parquet
 filtered_control_parquet_filename = f'control.parquet'
-filtered_control_parquet_file_path = os.path.join(PYTHON_PREFIX, filtered_parquet_folder, filtered_control_parquet_filename)
+filtered_control_parquet_file_path = os.path.join(filtered_parquet_folder, filtered_control_parquet_filename)
 converter.dataframe_to_parquet(filtered_control_df, filtered_control_parquet_file_path)
 
 # COMMAND ----------
 
-dbutils.fs.ls(os.path.join(DBUTILS_PREFIX, filtered_parquet_folder))
-
-# COMMAND ----------
-
-
+os.listdir(filtered_parquet_folder)

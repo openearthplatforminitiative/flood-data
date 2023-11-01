@@ -12,6 +12,7 @@
 # COMMAND ----------
 
 # MAGIC %sh
+# MAGIC
 # MAGIC ls /dbfs/mnt/openepi-storage/glofas/processed
 
 # COMMAND ----------
@@ -88,7 +89,7 @@ USE_FIRST_AS_CONTROL = get_config_val('USE_FIRST_AS_CONTROL')
 
 # COMMAND ----------
 
-date = datetime.utcnow() #- timedelta(days=3)
+date = datetime.utcnow() #- timedelta(days=1)
 formatted_date = date.strftime("%Y-%m-%d")
 formatted_date
 
@@ -107,7 +108,8 @@ CustomSchemaWithoutTimestamp = StructType([
 # COMMAND ----------
 
 filtered_wildcard = 'filtered-*.parquet'
-#a_couple_files = 'filtered-24*.parquet'
+# a_couple_files = 'filtered-24*.parquet'
+# a_single_file = 'filtered-240.parquet'
 processed_discharge_filepath = os.path.join(DBUTILS_PREFIX, S3_GLOFAS_FILTERED_PATH, formatted_date, filtered_wildcard)
 
 # COMMAND ----------
@@ -246,15 +248,17 @@ detailed_forecast_df = detailed_forecast_df.join(
 # COMMAND ----------
 
 # Create folder on cloud storage
-target_folder = os.path.join(DBUTILS_PREFIX, S3_GLOFAS_PROCESSED_PATH, formatted_date)
-dbutils.fs.mkdirs(target_folder)
+target_folder = os.path.join(S3_GLOFAS_PROCESSED_PATH, formatted_date)
+target_folder_db = os.path.join(DBUTILS_PREFIX, target_folder)
+target_folder_py = os.path.join(PYTHON_PREFIX, target_folder)
+os.makedirs(target_folder_py, exist_ok=True)
 
 # Define summary forecast file path
-summary_forecast_file_path = os.path.join(target_folder, GLOFAS_PROCESSED_SUMMARY_FORECAST_FILENAME)
+summary_forecast_file_path = os.path.join(target_folder_db, GLOFAS_PROCESSED_SUMMARY_FORECAST_FILENAME)
 print(summary_forecast_file_path)
 
 # Define detailed forecast file path
-detailed_forecast_file_path = os.path.join(target_folder, GLOFAS_PROCESSED_DETAILED_FORECAST_FILENAME)
+detailed_forecast_file_path = os.path.join(target_folder_db, GLOFAS_PROCESSED_DETAILED_FORECAST_FILENAME)
 print(detailed_forecast_file_path)
 
 # COMMAND ----------

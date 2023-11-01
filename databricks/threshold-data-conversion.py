@@ -44,17 +44,18 @@ GLOFAS_RET_PRD_THRESH_VALS = get_config_val("GLOFAS_RET_PRD_THRESH_VALS")
 # COMMAND ----------
 
 converter = RasterConverter()
-target_parquet_folder = os.path.join(DBUTILS_PREFIX, S3_GLOFAS_AUX_DATA_PATH)
+target_parquet_folder = os.path.join(PYTHON_PREFIX, S3_GLOFAS_AUX_DATA_PATH)
 
 for threshold in GLOFAS_RET_PRD_THRESH_VALS:
     raster_filename = GLOFAS_RET_PRD_THRESH_RASTER_FILENAMES[str(threshold)]
     parquet_filename = GLOFAS_RET_PRD_THRESH_PARQUET_FILENAMES[str(threshold)]
 
-    raster_filepath = os.path.join(PYTHON_PREFIX, S3_GLOFAS_AUX_DATA_PATH, raster_filename)
-    parquet_filepath = os.path.join(PYTHON_PREFIX, S3_GLOFAS_AUX_DATA_PATH, parquet_filename)
+    raster_filepath = os.path.join(target_parquet_folder, raster_filename)
+    parquet_filepath = os.path.join(target_parquet_folder, parquet_filename)
 
     converter.file_to_parquet(raster_filepath, parquet_filepath, 
                               cols_to_drop=['wgs_1984'], 
+                              cols_to_rename={'lat': 'latitude', 'lon': 'longitude'},
                               drop_index=False, save_index=False)
 
 # COMMAND ----------
@@ -65,4 +66,4 @@ for threshold in GLOFAS_RET_PRD_THRESH_VALS:
 
 # COMMAND ----------
 
-dbutils.fs.ls(target_parquet_folder)
+os.listdir(target_parquet_folder)

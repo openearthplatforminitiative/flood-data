@@ -80,8 +80,8 @@ leadtime_hours = [
 converter = RasterConverter()
 
 #Create target folder
-filtered_parquet_folder = os.path.join(S3_GLOFAS_FILTERED_PATH, formatted_date)
-dbutils.fs.mkdirs(os.path.join(DBUTILS_PREFIX, filtered_parquet_folder))
+filtered_parquet_folder = os.path.join(PYTHON_PREFIX, S3_GLOFAS_FILTERED_PATH, formatted_date)
+os.makedirs(filtered_parquet_folder, exist_ok=True)
 
 # Open upstream area NetCDF file and restrict to area of interest
 upstream_file_path = os.path.join(PYTHON_PREFIX, S3_GLOFAS_AUX_DATA_PATH, GLOFAS_UPSTREAM_FILENAME)
@@ -135,19 +135,9 @@ for l_hour in tqdm(leadtime_hours):
     
     # Save to Parquet
     filtered_parquet_filename = f'filtered-{l_hour}.parquet'
-    filtered_parquet_file_path = os.path.join(PYTHON_PREFIX, filtered_parquet_folder, filtered_parquet_filename)
+    filtered_parquet_file_path = os.path.join(filtered_parquet_folder, filtered_parquet_filename)
     converter.dataframe_to_parquet(filtered_df, filtered_parquet_file_path)
 
 # COMMAND ----------
 
-# MAGIC %sh
-# MAGIC
-# MAGIC ls /dbfs/mnt/openepi-storage/glofas/api-downloads/2023-10-26
-# MAGIC
-# MAGIC
-# MAGIC
-
-# COMMAND ----------
-
-# MAGIC %sh
-# MAGIC ls /dbfs/mnt/openepi-storage/glofas/filtered/2023-10-26
+os.listdir(filtered_parquet_folder)

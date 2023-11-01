@@ -129,8 +129,8 @@ else:
 
 # COMMAND ----------
 
-target_folder = os.path.join(S3_GLOFAS_DOWNLOADS_PATH, formatted_date)
-dbutils.fs.mkdirs(os.path.join(DBUTILS_PREFIX, target_folder))
+target_folder = os.path.join(PYTHON_PREFIX, S3_GLOFAS_DOWNLOADS_PATH, formatted_date)
+os.makedirs(target_folder, exist_ok=True)
 
 # COMMAND ----------
 
@@ -143,7 +143,7 @@ dbutils.fs.mkdirs(os.path.join(DBUTILS_PREFIX, target_folder))
 for l_hour in leadtime_hours:
     # Define target filepath
     target_filename = f'download-{l_hour}.grib'
-    target_file_path = os.path.join(PYTHON_PREFIX, target_folder, target_filename)
+    target_file_path = os.path.join(target_folder, target_filename)
 
         # Define the config
     config = GloFASAPIConfig(
@@ -163,9 +163,4 @@ for l_hour in leadtime_hours:
 
 # COMMAND ----------
 
-# MAGIC %sh
-# MAGIC ls /dbfs/mnt/openepi-storage/glofas/api-downloads/2023-10-27
-
-# COMMAND ----------
-
-
+os.listdir(target_folder)

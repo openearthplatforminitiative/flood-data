@@ -127,4 +127,4 @@ sorted_df.write.parquet(target_filepath)
 
 # COMMAND ----------
 
-dbutils.fs.ls(os.path.join(DBUTILS_PREFIX, S3_GLOFAS_AUX_DATA_PATH))
+os.listdir(os.path.join(PYTHON_PREFIX, S3_GLOFAS_AUX_DATA_PATH))

@@ -16,6 +16,7 @@
 # COMMAND ----------
 
 import os
+import shutil
 from flood.utils.config import get_config_val
 
 # COMMAND ----------
@@ -27,6 +28,8 @@ from flood.utils.config import get_config_val
 # COMMAND ----------
 
 DBUTILS_PREFIX = get_config_val("DBUTILS_PREFIX")
+PYTHON_PREFIX = get_config_val("PYTHON_PREFIX")
+
 S3_GLOFAS_AUX_DATA_PATH = get_config_val("S3_GLOFAS_AUX_DATA_PATH")
 GLOFAS_UPSTREAM_FILENAME = get_config_val("GLOFAS_UPSTREAM_FILENAME")
 
@@ -38,7 +41,8 @@ GLOFAS_UPSTREAM_FILENAME = get_config_val("GLOFAS_UPSTREAM_FILENAME")
 
 # COMMAND ----------
 
-dbutils.fs.mkdirs(os.path.join(DBUTILS_PREFIX, S3_GLOFAS_AUX_DATA_PATH))
+target_upstream_folder = os.path.join(PYTHON_PREFIX, S3_GLOFAS_AUX_DATA_PATH)
+os.makedirs(target_upstream_folder, exist_ok=True)
 
 # COMMAND ----------
 
@@ -48,9 +52,8 @@ dbutils.fs.mkdirs(os.path.join(DBUTILS_PREFIX, S3_GLOFAS_AUX_DATA_PATH))
 
 # COMMAND ----------
 
-current_upstream_data_path = os.path.join(DBUTILS_PREFIX,'FileStore', 'flood', GLOFAS_UPSTREAM_FILENAME)
-target_upstream_folder = os.path.join(DBUTILS_PREFIX, S3_GLOFAS_AUX_DATA_PATH)
-dbutils.fs.mv(current_upstream_data_path, target_upstream_folder)
+current_upstream_data_path = os.path.join(PYTHON_PREFIX,'FileStore', 'flood', GLOFAS_UPSTREAM_FILENAME)
+shutil.move(current_upstream_data_path, target_upstream_folder)
 
 # COMMAND ----------
 
@@ -60,4 +63,4 @@ dbutils.fs.mv(current_upstream_data_path, target_upstream_folder)
 
 # COMMAND ----------
 
-dbutils.fs.ls(target_upstream_folder)
+os.listdir(target_upstream_folder)

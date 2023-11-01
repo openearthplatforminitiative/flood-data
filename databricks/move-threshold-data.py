@@ -17,6 +17,7 @@
 # COMMAND ----------
 
 import os
+import shutil
 from flood.utils.config import get_config_val
 
 # COMMAND ----------
@@ -28,6 +29,8 @@ from flood.utils.config import get_config_val
 # COMMAND ----------
 
 DBUTILS_PREFIX = get_config_val("DBUTILS_PREFIX")
+PYTHON_PREFIX = get_config_val("PYTHON_PREFIX")
+
 S3_GLOFAS_AUX_DATA_PATH = get_config_val("S3_GLOFAS_AUX_DATA_PATH")
 GLOFAS_RET_PRD_THRESH_RASTER_FILENAMES = get_config_val("GLOFAS_RET_PRD_THRESH_RASTER_FILENAMES")
 GLOFAS_RET_PRD_THRESH_VALS = get_config_val("GLOFAS_RET_PRD_THRESH_VALS")
@@ -40,7 +43,8 @@ GLOFAS_RET_PRD_THRESH_VALS = get_config_val("GLOFAS_RET_PRD_THRESH_VALS")
 
 # COMMAND ----------
 
-dbutils.fs.mkdirs(os.path.join(DBUTILS_PREFIX, S3_GLOFAS_AUX_DATA_PATH))
+target_threshold_folder = os.path.join(PYTHON_PREFIX, S3_GLOFAS_AUX_DATA_PATH)
+os.makedirs(target_threshold_folder, exist_ok=True)
 
 # COMMAND ----------
 
@@ -50,12 +54,10 @@ dbutils.fs.mkdirs(os.path.join(DBUTILS_PREFIX, S3_GLOFAS_AUX_DATA_PATH))
 
 # COMMAND ----------
 
-target_threshold_folder = os.path.join(DBUTILS_PREFIX, S3_GLOFAS_AUX_DATA_PATH)
-
 for thresold in GLOFAS_RET_PRD_THRESH_VALS:
     filename = GLOFAS_RET_PRD_THRESH_RASTER_FILENAMES[str(thresold)]
-    current_threshold_data_path = os.path.join(DBUTILS_PREFIX,'FileStore', 'flood', filename)
-    dbutils.fs.mv(current_threshold_data_path, target_threshold_folder)
+    current_threshold_data_path = os.path.join(PYTHON_PREFIX,'FileStore', 'flood', filename)
+    shutil.move(current_threshold_data_path, target_threshold_folder)
 
 # COMMAND ----------
 
@@ -65,4 +67,8 @@ for thresold in GLOFAS_RET_PRD_THRESH_VALS:
 
 # COMMAND ----------
 
-dbutils.fs.ls(target_threshold_folder)
+os.listdir(target_threshold_folder)
+
+# COMMAND ----------
+
+
