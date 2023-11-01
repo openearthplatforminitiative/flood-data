@@ -20,11 +20,11 @@ setup(
     install_requires=[  # specify your dependencies here
         'cdsapi',
         'xarray',
-        'pandas',
+        'geopandas',
         'pyarrow',
         'netcdf4',
         'cfgrib',
-        'numpy',
+        'eccodes',
         'ecmwflibs'
     ],
     python_requires='>=3.8',
