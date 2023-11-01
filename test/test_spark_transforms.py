@@ -5,7 +5,8 @@ from pyspark.sql import functions as F
 from flood.spark.transforms import (compute_flood_tendency,
                                     compute_flood_intensity,
                                     compute_flood_peak_timing,
-                                    compute_flood_threshold_percentages)
+                                    compute_flood_threshold_percentages,
+                                    add_geometry)
 from flood.utils.config import get_config_val
 import datetime
 
@@ -605,6 +606,37 @@ class TestSparkUtilities(unittest.TestCase):
         # Sort result by latitude and longitude as the order of the rows is not guaranteed.
         self.assertEqual(result_df_approx.sort('latitude', 'longitude').collect(), expected_df_approx.collect())
         self.assertEqual(result_df_exact.sort('latitude', 'longitude').collect(), expected_df_exact.collect())
+
+    # @unittest.skip("Skipping test_add_geometry")
+    def test_add_geometry(self):
+
+        SCHEMA = ["latitude", "longitude", "2y_threshold", "5y_threshold", "20y_threshold"]
+        GLOFAS_RESOLUTION = 0.05
+        GLOFAS_PRECISION = 3
+
+        # Create synthetic data for testing
+        data = [
+            (16.975, -17.975, 20.0, 21.0, 22.0),
+            (2.225, 2.475, 30.0, 32.0, 39.0),
+            (-0.525, 3.925, 35.0, 39.0, 44.0),
+        ]
+
+        # Create DataFrame using the synthetic data
+        df = self.spark.createDataFrame(data, SCHEMA)
+
+        # Add geometry to the DataFrame
+        result_df = add_geometry(df, half_grid_size=GLOFAS_RESOLUTION/2, precision=GLOFAS_PRECISION)
+
+        # Get the geometry for the synthetic data
+        resulting_first_geometry = result_df.filter((result_df['latitude'] == 16.975) & (result_df['longitude'] == -17.975)).first()
+        resulting_second_geometry = result_df.filter((result_df['latitude'] == 2.225) & (result_df['longitude'] == 2.475)).first()
+        resulting_third_geometry = result_df.filter((result_df['latitude'] == -0.525) & (result_df['longitude'] == 3.925)).first()
+
+        # Assertions to check if the functionality works as expected
+        self.assertEqual(resulting_first_geometry['wkt'], 'POLYGON ((-18.0 16.95,-18.0 17.0,-17.95 17.0,-17.95 16.95,-18.0 16.95))')
+        self.assertEqual(resulting_second_geometry['wkt'], 'POLYGON ((2.45 2.2,2.45 2.25,2.5 2.25,2.5 2.2,2.45 2.2))')
+        self.assertEqual(resulting_third_geometry['wkt'], 'POLYGON ((3.9 -0.55,3.9 -0.5,3.95 -0.5,3.95 -0.55,3.9 -0.55))')
+
 
 if __name__ == '__main__':
     unittest.main()

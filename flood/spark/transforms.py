@@ -161,9 +161,9 @@ def add_geometry(df, half_grid_size, precision):
     :return: The DataFrame with a geometry column.
     """
     return df.withColumn("min_latitude", F.round(F.col("latitude") - half_grid_size, precision))\
-             .withColumn("max_latitude", F.round(F.col("latitude") - half_grid_size, precision))\
-             .withColumn("min_longitude", F.round(F.col("latitude") - half_grid_size, precision))\
-             .withColumn("max_longitude", F.round(F.col("latitude") - half_grid_size, precision))\
+             .withColumn("max_latitude", F.round(F.col("latitude") + half_grid_size, precision))\
+             .withColumn("min_longitude", F.round(F.col("longitude") - half_grid_size, precision))\
+             .withColumn("max_longitude", F.round(F.col("longitude") + half_grid_size, precision))\
              .withColumn("wkt",\
                  F.concat(F.lit("POLYGON (("),\
                      F.col("min_longitude"), F.lit(" "), F.col("min_latitude"), F.lit(","),\
