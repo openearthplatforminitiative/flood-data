@@ -85,7 +85,7 @@ def compute_flood_peak_timing(df, flood_peak_timings, col_name='peak_timing'):
     # Define the peak_day as the valid_time of the peak forecast step minus one day
     df = df.withColumn("row_num", F.row_number().over(windowSpec))\
            .filter(F.col("row_num") == 1)\
-           .select("latitude", "longitude", "max_2y_start", "step", "valid_time")\
+           .select("latitude", "longitude", "max_2y_start", "step", "time", "valid_time")\
            .withColumnRenamed("step", "peak_step")\
            .withColumn("peak_day", F.date_sub("valid_time", 1))\
            .drop("valid_time")   
