@@ -247,8 +247,12 @@ detailed_forecast_df = detailed_forecast_df.join(
 
 # COMMAND ----------
 
-# Create folder on cloud storage
-target_folder = os.path.join(S3_GLOFAS_PROCESSED_PATH, formatted_date)
+# target_folder = os.path.join(S3_GLOFAS_PROCESSED_PATH, formatted_date)
+
+# Don't use date in path, ensures that reading most
+# recent data through API is straightforward 
+target_folder = os.path.join(S3_GLOFAS_PROCESSED_PATH, 'newest')
+
 target_folder_db = os.path.join(DBUTILS_PREFIX, target_folder)
 target_folder_py = os.path.join(PYTHON_PREFIX, target_folder)
 os.makedirs(target_folder_py, exist_ok=True)
@@ -269,11 +273,11 @@ print(detailed_forecast_file_path)
 
 # COMMAND ----------
 
-summary_forecast_df.write.parquet(summary_forecast_file_path)
+summary_forecast_df.write.mode('overwrite').parquet(summary_forecast_file_path)
 
 # COMMAND ----------
 
-detailed_forecast_df.write.parquet(detailed_forecast_file_path)
+detailed_forecast_df.write.mode('overwrite').parquet(detailed_forecast_file_path)
 
 # COMMAND ----------
 
