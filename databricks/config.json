@@ -27,7 +27,7 @@
     "GLOFAS_PRECISION": 3,
     "GLOFAS_BUFFER_DIV": 4,
     "GLOFAS_BUFFER_MULT": 2,
-    "GLOFAS_UPSTREAM_THRESHOLD": 250000,
+    "GLOFAS_UPSTREAM_THRESHOLD": 250000000,
     "GLOFAS_FLOOD_TENDENCIES": {
         "increasing": "U",
         "stagnant": "C",
