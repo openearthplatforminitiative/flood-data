@@ -114,7 +114,7 @@ def compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_val
 
     assert accuracy_mode in ['approx', 'exact'], "Accuracy mode must be either 'approx' or 'exact'."
 
-    threshold_cols = [f"{int(threshold)}y_threshold" for threshold in threshold_vals]
+    threshold_cols = [f"threshold_{int(threshold)}y" for threshold in threshold_vals]
     
     # Join forecast dataframe with threshold dataframe on latitude and longitude
     joined_df = forecast_df.join(threshold_df, on=['latitude', 'longitude'], how="left")

@@ -76,7 +76,6 @@ for threshold in GLOFAS_RET_PRD_THRESH_VALS:
     threshold_filepath = os.path.join(DBUTILS_PREFIX, S3_GLOFAS_AUX_DATA_PATH, threshold_filename)
 
     df = (spark.read.parquet(threshold_filepath)
-          .withColumnRenamed(f"{threshold}yRP_GloFASv4", f"{threshold}y_threshold")
           .withColumn("latitude", F.round("latitude", GLOFAS_PRECISION))
           .withColumn("longitude", F.round("longitude", GLOFAS_PRECISION)))
     dataframes.append(df)
@@ -129,7 +128,7 @@ sorted_df = combined_df.sort(["latitude", "longitude"])
 # COMMAND ----------
 
 target_filepath = os.path.join(DBUTILS_PREFIX, S3_GLOFAS_AUX_DATA_PATH, GLOFAS_PROCESSED_THRESH_FILENAME)
-sorted_df.write.parquet(target_filepath)
+sorted_df.write.mode('overwrite').parquet(target_filepath)
 
 # COMMAND ----------
 

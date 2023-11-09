@@ -46,6 +46,8 @@ GLOFAS_RET_PRD_THRESH_VALS = get_config_val("GLOFAS_RET_PRD_THRESH_VALS")
 converter = RasterConverter()
 target_parquet_folder = os.path.join(PYTHON_PREFIX, S3_GLOFAS_AUX_DATA_PATH)
 
+# COMMAND ----------
+
 for threshold in GLOFAS_RET_PRD_THRESH_VALS:
     raster_filename = GLOFAS_RET_PRD_THRESH_RASTER_FILENAMES[str(threshold)]
     parquet_filename = GLOFAS_RET_PRD_THRESH_PARQUET_FILENAMES[str(threshold)]
@@ -55,7 +57,11 @@ for threshold in GLOFAS_RET_PRD_THRESH_VALS:
 
     converter.file_to_parquet(raster_filepath, parquet_filepath, 
                               cols_to_drop=['wgs_1984'], 
-                              cols_to_rename={'lat': 'latitude', 'lon': 'longitude'},
+                              cols_to_rename={'lat': 'latitude', 
+                                              'lon': 'longitude',
+                                              '2yRP_GloFASv4': 'threshold_2y',
+                                              '5yRP_GloFASv4': 'threshold_5y',
+                                              '20yRP_GloFASv4': 'threshold_20y'},
                               drop_index=False, save_index=False)
 
 # COMMAND ----------
