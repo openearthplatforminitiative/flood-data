@@ -94,7 +94,7 @@ class TestSparkUtilities(unittest.TestCase):
 
         SCHEMA = ["latitude", "longitude", "control_dis",
                   "control_time", "control_valid_time",
-                  "time", "valid_time", "step",
+                  "issued_on", "valid_time", "step",
                   "p_above_2y", "p_above_5y", "p_above_20y",
                   "min_dis", "Q1_dis", "median_dis", "Q3_dis", "max_dis"]
 
@@ -150,7 +150,7 @@ class TestSparkUtilities(unittest.TestCase):
 
         SCHEMA = ["latitude", "longitude", "control_dis",
                   "control_time", "control_valid_time", 
-                  "time", "valid_time", "step",
+                  "issued_on", "valid_time", "step",
                   "p_above_2y", "p_above_5y", "p_above_20y",
                   "min_dis", "Q1_dis", "median_dis", "Q3_dis", "max_dis"]
 
@@ -201,7 +201,7 @@ class TestSparkUtilities(unittest.TestCase):
         PEAK_TIMING_COL_NAME = 'peak_timing'
 
         SCHEMA = ["latitude", "longitude", "control_dis", "control_time",
-                  "control_valid_time", "time", "valid_time", "step",
+                  "control_valid_time", "issued_on", "valid_time", "step",
                   "p_above_2y", "p_above_5y", "p_above_20y",
                   "min_dis", "Q1_dis", "median_dis", "Q3_dis", "max_dis"]
 
@@ -520,13 +520,13 @@ class TestSparkUtilities(unittest.TestCase):
     # @unittest.skip("Skipping test_compute_flood_threshold_percentages")
     def test_compute_flood_threshold_percentages(self):
 
-        FORECAST_SCHEMA = ['number', 'latitude', 'longitude', 'time', 
+        FORECAST_SCHEMA = ['number', 'latitude', 'longitude', 'issued_on', 
                            'step', 'valid_time', 'dis24']
         
         THRESHOLD_SCHEMA = ['latitude', 'longitude', 'threshold_2y', 
                             'threshold_5y', 'threshold_20y']
 
-        OUTPUT_SCHEMA = ["latitude", "longitude", "time", "valid_time", "step", 
+        OUTPUT_SCHEMA = ["latitude", "longitude", "issued_on", "valid_time", "step", 
                          "p_above_2y", "p_above_5y", "p_above_20y", 
                          "min_dis", "Q1_dis", "median_dis", "Q3_dis", "max_dis"]
         
