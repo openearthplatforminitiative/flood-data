@@ -523,8 +523,8 @@ class TestSparkUtilities(unittest.TestCase):
         FORECAST_SCHEMA = ['number', 'latitude', 'longitude', 'time', 
                            'step', 'valid_time', 'dis24']
         
-        THRESHOLD_SCHEMA = ['latitude', 'longitude', '2y_threshold', 
-                            '5y_threshold', '20y_threshold']
+        THRESHOLD_SCHEMA = ['latitude', 'longitude', 'threshold_2y', 
+                            'threshold_5y', 'threshold_20y']
 
         OUTPUT_SCHEMA = ["latitude", "longitude", "time", "valid_time", "step", 
                          "p_above_2y", "p_above_5y", "p_above_20y", 
@@ -610,7 +610,7 @@ class TestSparkUtilities(unittest.TestCase):
     # @unittest.skip("Skipping test_add_geometry")
     def test_add_geometry(self):
 
-        SCHEMA = ["latitude", "longitude", "2y_threshold", "5y_threshold", "20y_threshold"]
+        SCHEMA = ["latitude", "longitude", "threshold_2y", "threshold_5y", "threshold_20y"]
         GLOFAS_RESOLUTION = 0.05
         GLOFAS_PRECISION = 3
 
