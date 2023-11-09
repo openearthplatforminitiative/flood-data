@@ -85,7 +85,7 @@ def compute_flood_peak_timing(df, flood_peak_timings, col_name='peak_timing'):
     # Define the peak_day as the valid_time of the peak forecast step minus one day
     df = df.withColumn("row_num", F.row_number().over(windowSpec))\
            .filter(F.col("row_num") == 1)\
-           .select("latitude", "longitude", "max_2y_start", "time", "step", "valid_time")\
+           .select("latitude", "longitude", "max_2y_start", "issued_on", "step", "valid_time")\
            .withColumnRenamed("step", "peak_step")\
            .withColumn("peak_day", F.date_sub("valid_time", 1))\
            .drop("valid_time")   
@@ -146,7 +146,7 @@ def compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_val
         F.max('dis24').alias('max_dis')
     ])
     
-    results = joined_df.groupBy('latitude', 'longitude', 'time', 'valid_time', 'step').agg(*agg_exprs)
+    results = joined_df.groupBy('latitude', 'longitude', 'issued_on', 'valid_time', 'step').agg(*agg_exprs)
     
     return results
 

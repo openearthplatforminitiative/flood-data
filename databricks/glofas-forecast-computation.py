@@ -125,7 +125,7 @@ all_forecasts_df = spark.read.schema(CustomSchemaWithoutTimestamp)\
                         .parquet(processed_discharge_filepath)\
                         .withColumn("latitude", F.round("latitude", GLOFAS_PRECISION))\
                         .withColumn("longitude", F.round("longitude", GLOFAS_PRECISION))\
-                        .withColumn("time", F.to_date(F.to_timestamp(F.col("time") / 1e9)))\
+                        .withColumn("issued_on", F.to_date(F.to_timestamp(F.col("time") / 1e9))).drop("time")\
                         .withColumn("valid_time", F.to_date(F.to_timestamp(F.col("valid_time") / 1e9)))\
                         .withColumn("step", (F.col("step") / (60 * 60 * 24 * 1e9)).cast("int"))
 
