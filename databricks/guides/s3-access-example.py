@@ -18,12 +18,24 @@ dbutils.fs.unmount(f"/mnt/{mount_name}")
 
 # COMMAND ----------
 
-dbutils.fs.mount(f"s3a://{aws_bucket_name}", f"/mnt/{mount_name}")
+dbutils.fs.mount(
+  f"s3a://{aws_bucket_name}", f"/mnt/{mount_name}",
+  # extra_configs = {"fs.s3a.aws.credentials.provider": "com.amazonaws.auth.InstanceProfileCredentialsProvider"}
+)
+
+# COMMAND ----------
+
+dbutils.fs.mounts()
 
 # COMMAND ----------
 
 # MAGIC %sh
-# MAGIC ls /dbfs/mnt/openepi-storage
+# MAGIC cat /dbfs/mnt/openepi-storage/mount.err
+
+# COMMAND ----------
+
+# MAGIC %sh
+# MAGIC touch /dbfs/mnt/openepi-storage/tmp/testfile.txt
 
 # COMMAND ----------
 
@@ -46,12 +58,17 @@ with open("/tmp/s3_test_file.txt", "w") as f:
 
 # COMMAND ----------
 
-# DBTITLE 1,Move the file to S3
-dbutils.fs.mv("file:/tmp/s3_test_file.txt", f"s3a://{aws_bucket_name}/")
+# MAGIC %sh
+# MAGIC touch /tmp/s3_test_file.txt
 
 # COMMAND ----------
 
-dbutils.fs.ls(f"s3a://{aws_bucket_name}/")
+# DBTITLE 1,Move the file to S3
+dbutils.fs.mv("file:/tmp/s3_test_file.txt", f"s3a://{aws_bucket_name}/tmp/")
+
+# COMMAND ----------
+
+dbutils.fs.rm(f"s3a://{aws_bucket_name}/tmp/s3_test_file.txt")
 
 # COMMAND ----------
 
