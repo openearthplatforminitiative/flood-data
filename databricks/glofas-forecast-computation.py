@@ -126,8 +126,10 @@ all_forecasts_df = spark.read.schema(CustomSchemaWithoutTimestamp)\
                         .withColumn("latitude", F.round("latitude", GLOFAS_PRECISION))\
                         .withColumn("longitude", F.round("longitude", GLOFAS_PRECISION))\
                         .withColumn("issued_on", F.to_date(F.to_timestamp(F.col("time") / 1e9))).drop("time")\
+                        .withColumn("step", (F.col("step") / (60 * 60 * 24 * 1e9)).cast("int"))\
                         .withColumn("valid_time", F.to_date(F.to_timestamp(F.col("valid_time") / 1e9)))\
-                        .withColumn("step", (F.col("step") / (60 * 60 * 24 * 1e9)).cast("int"))
+                        .withColumn("valid_for", F.date_sub("valid_time", 1))\
+                        .drop("valid_time")   
 
 # COMMAND ----------
 
@@ -247,15 +249,9 @@ detailed_forecast_df = detailed_forecast_df.join(
 
 # COMMAND ----------
 
-# target_folder = os.path.join(S3_GLOFAS_PROCESSED_PATH, formatted_date)
-
-# Don't use date in path, ensures that reading most
-# recent data through API is straightforward 
 target_folder = os.path.join(S3_GLOFAS_PROCESSED_PATH, 'newest')
-
 target_folder_db = os.path.join(DBUTILS_PREFIX, target_folder)
 target_folder_py = os.path.join(PYTHON_PREFIX, target_folder)
-os.makedirs(target_folder_py, exist_ok=True)
 
 # Define summary forecast file path
 summary_forecast_file_path = os.path.join(target_folder_db, GLOFAS_PROCESSED_SUMMARY_FORECAST_FILENAME)
@@ -264,6 +260,10 @@ print(summary_forecast_file_path)
 # Define detailed forecast file path
 detailed_forecast_file_path = os.path.join(target_folder_db, GLOFAS_PROCESSED_DETAILED_FORECAST_FILENAME)
 print(detailed_forecast_file_path)
+
+# COMMAND ----------
+
+os.makedirs(target_folder_py, exist_ok=True)
 
 # COMMAND ----------
 
@@ -278,6 +278,47 @@ summary_forecast_df.write.mode('overwrite').parquet(summary_forecast_file_path)
 # COMMAND ----------
 
 detailed_forecast_df.write.mode('overwrite').parquet(detailed_forecast_file_path)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC
+# MAGIC **Move the files to cloud storage due to write restrictions**
+
+# COMMAND ----------
+
+aws_bucket_name = "databricks-data-openepi"
+
+# Find the starting position of 'glofas'
+summary_pos = summary_forecast_file_path.find('glofas')
+detailed_pos = detailed_forecast_file_path.find('glofas')
+
+# Slice the paths from the position where 'glofas' starts
+summary_forecast_s3_path = summary_forecast_file_path[summary_pos:]
+detailed_forecast_s3_path = detailed_forecast_file_path[detailed_pos:]
+
+print(summary_forecast_s3_path)
+print(detailed_forecast_s3_path)
+
+# COMMAND ----------
+
+# Delete existing summary forecast
+dbutils.fs.rm(f"s3a://{aws_bucket_name}/{summary_forecast_s3_path}", recurse=True)
+
+# COMMAND ----------
+
+# Delete existing detailed forecast
+dbutils.fs.rm(f"s3a://{aws_bucket_name}/{detailed_forecast_s3_path}", recurse=True)
+
+# COMMAND ----------
+
+# Move summary forecast
+dbutils.fs.mv(summary_forecast_file_path, f"s3a://{aws_bucket_name}/{summary_forecast_s3_path}", recurse=True)
+
+# COMMAND ----------
+
+# Move detailed forecast
+dbutils.fs.mv(detailed_forecast_file_path, f"s3a://{aws_bucket_name}/{detailed_forecast_s3_path}", recurse=True)
 
 # COMMAND ----------
 

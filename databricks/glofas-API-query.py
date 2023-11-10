@@ -109,18 +109,6 @@ else:
         product_type = 'ensemble_perturbed_forecasts'
         print('Retrieving only ensemble')
 
-# Define the config
-# config = GloFASAPIConfig(
-#     year=date_for_request.year,
-#     month=date_for_request.month,
-#     day=date_for_request.day,
-#     leadtime_hour=leadtime_hour,
-#     area=area
-# )
-
-# Convert config to a dictionary
-# request_params = config.to_dict()
-
 # COMMAND ----------
 
 # MAGIC %md

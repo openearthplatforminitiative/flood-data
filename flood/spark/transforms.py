@@ -82,13 +82,12 @@ def compute_flood_peak_timing(df, flood_peak_timings, col_name='peak_timing'):
                        .orderBy([F.asc("condition"), F.desc("median_dis")])
     
     # Retrieve the first row (peak step) for each partition (lat, lon group)
-    # Define the peak_day as the valid_time of the peak forecast step minus one day
+    # Define the peak_day as the valid_for field of the peak forecast step
     df = df.withColumn("row_num", F.row_number().over(windowSpec))\
            .filter(F.col("row_num") == 1)\
-           .select("latitude", "longitude", "max_2y_start", "issued_on", "step", "valid_time")\
+           .select("latitude", "longitude", "max_2y_start", "issued_on", "step", "valid_for")\
            .withColumnRenamed("step", "peak_step")\
-           .withColumn("peak_day", F.date_sub("valid_time", 1))\
-           .drop("valid_time")   
+           .withColumnRenamed("valid_for", "peak_day")
     
     # Old method, using first() with sorted window may supposedly not lead to desired result
     # See: https://stackoverflow.com/a/33878701
@@ -146,7 +145,7 @@ def compute_flood_threshold_percentages(forecast_df, threshold_df, threshold_val
         F.max('dis24').alias('max_dis')
     ])
     
-    results = joined_df.groupBy('latitude', 'longitude', 'issued_on', 'valid_time', 'step').agg(*agg_exprs)
+    results = joined_df.groupBy('latitude', 'longitude', 'issued_on', 'valid_for', 'step').agg(*agg_exprs)
     
     return results
 
